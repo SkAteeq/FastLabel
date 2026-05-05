@@ -18,9 +18,19 @@ public class PdfConverter {
             ParcelFileDescriptor destination,
             Callback callback) {
         try {
+            // Set high quality resolution (300 DPI for better PDF quality)
+            PrintAttributes.Resolution resolution = new PrintAttributes.Resolution("pdf", "pdf", 300, 300);
+            
+            PrintAttributes qualityAttributes = new PrintAttributes.Builder()
+                .setMediaSize(printAttributes.getMediaSize())
+                .setResolution(resolution)
+                .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
+                .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+                .build();
+            
             PdfPrint.print(
                     printAdapter,
-                    printAttributes,
+                    qualityAttributes,
                     destination,
                     new PdfPrint.Callback() {
                         @Override
