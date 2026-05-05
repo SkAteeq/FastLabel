@@ -114,7 +114,22 @@ public class WebAppInterface {
             if (uri != null) {
                 try {
                     pfd = resolver.openFileDescriptor(uri, "rw");
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                    final String err = e.getMessage();
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(context, "Error opening descriptor: " + err, Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }
+            } else {
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(context, "Failed to create MediaStore entry", Toast.LENGTH_LONG).show();
+                    }
+                });
             }
             if (pfd == null) return;
         } else {
@@ -130,21 +145,37 @@ public class WebAppInterface {
             try {
                 destFile.createNewFile();
                 pfd = ParcelFileDescriptor.open(destFile, ParcelFileDescriptor.MODE_READ_WRITE);
-            } catch(Exception e) {}
+            } catch(Exception e) {
+                final String err = e.getMessage();
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(context, "Error creating file: " + err, Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
         }
 
-        if (pfd == null) return;
+        if (pfd == null) {
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(context, "Failed to prepare file for saving", Toast.LENGTH_LONG).show();
+                }
+            });
+            return;
+        }
 
         try {
             PrintAttributes.MediaSize mediaSize = "A5".equals(pageSize) ? PrintAttributes.MediaSize.ISO_A5 : PrintAttributes.MediaSize.ISO_A6;
             final ParcelFileDescriptor finalPfd = pfd;
             final File finalDestFile = destFile;
             
-            android.print.PdfPrint.print(
+            PdfConverter.convertPrintAdapter(
                 printAdapter,
                 new PrintAttributes.Builder().setMediaSize(mediaSize).build(),
                 pfd,
-                new android.print.PdfPrint.Callback() {
+                new PdfConverter.Callback() {
                     @Override
                     public void onSuccess() {
                         try { finalPfd.close(); } catch(Exception e) {}
