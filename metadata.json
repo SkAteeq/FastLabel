@@ -1,0 +1,5 @@
+{
+  "name": "FastLabel",
+  "description": "Offline-first application for small businesses to quickly generate and print shipping labels. Features a thumb-friendly UI and smart text extraction for pasted addresses.",
+  "requestFramePermissions": []
+}
