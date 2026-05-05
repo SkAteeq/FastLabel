@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ClipboardPaste, Printer, Search, PlusCircle, CheckCircle2, Share2 } from 'lucide-react';
+import { ChevronLeft, ClipboardPaste, Printer, Search, PlusCircle, CheckCircle2, Share2, Download, Settings } from 'lucide-react';
 import { SenderProfile, LabelRecord } from '../types';
+
+type PageSize = 'A6' | 'A5';
+
+const PAGE_SIZE_DIMENSIONS: Record<PageSize, [number, number]> = {
+  'A6': [1240, 1748],
+  'A5': [1748, 2480]
+};
 import { saveLabel } from '../db';
 import { PrintableLabel } from '../components/PrintableLabel';
 import toast from 'react-hot-toast';
-import { jsPDF } from 'jspdf';
-import domtoimage from 'dom-to-image';
+// @ts-ignore
+import html2pdf from 'html2pdf.js';
 
 interface CreatorWizardProps {
   sender: SenderProfile;
@@ -21,6 +28,25 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
     productDetails: '',
     timestamp: Date.now()
   });
+
+  const [pageSize, setPageSize] = useState<PageSize>('A6');
+
+  // Load initial setting
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('fastlabel_pagesize') as PageSize;
+      if (saved && PAGE_SIZE_DIMENSIONS[saved]) {
+        setPageSize(saved);
+      }
+    } catch(e){}
+  }, []);
+
+  const handlePageSizeChange = (newSize: PageSize) => {
+    setPageSize(newSize);
+    try {
+      localStorage.setItem('fastlabel_pagesize', newSize);
+    } catch(e){}
+  };
 
   const handlePaste = async () => {
     try {
@@ -55,91 +81,165 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
     }
   };
 
-  const handlePrint = async () => {
-    // Save to history before print
-    if (!initialLabel?.id) {
-      await saveLabel(label);
-    }
-    toast.success('Preparing print...');
-    window.print();
-    onFinish();
+  const getLabelHtml = () => {
+    const el = document.getElementById('printable-label');
+    if (!el) return '';
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: ${pageSize}; margin: 0; }
+    body { margin: 0; padding: 0; font-family: Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #printable-label { display: block !important; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  ${el.outerHTML}
+</body>
+</html>`;
   };
 
-  const generatePDFBlob = async () => {
-    const el = document.getElementById('printable-label');
-    if (!el) throw new Error('Label not found');
-    
-    // Check original state
-    const originalStyle = el.style.cssText;
-    const originalClassName = el.className;
-    
-    // Temporarily expose the label purely for capturing
-    el.className = "bg-white text-black font-sans box-border overflow-hidden absolute top-0 left-0 z-50 flex flex-col";
-    el.style.width = '384px'; // 4 inches at 96 dpi
-    el.style.height = '576px'; // 6 inches at 96 dpi
-
-    // Try using dom-to-image to bypass oklch parsing errors inside html2canvas
-    const imgData = await domtoimage.toPng(el, {
-      width: 384 * 3, // 4 inches at 96 dpi * 3 for higher quality
-      height: 576 * 3,
-      style: {
-        transform: 'scale(3)',
-        transformOrigin: 'top left',
-        width: '384px',
-        height: '576px'
+  const handlePrint = async () => {
+    try {
+      if (!initialLabel?.id) { await saveLabel(label); }
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.printHtml) {
+        (window as any).AndroidBridge.printHtml(getLabelHtml(), pageSize);
+        onFinish();
+      } else {
+        setTimeout(() => {
+          window.print();
+          onFinish();
+        }, 100);
       }
-    });
+    } catch (e) {}
+  };
 
-    // Restore
-    el.className = originalClassName;
-    el.style.cssText = originalStyle;
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "in",
-      format: [4, 6]
-    });
-    
-    pdf.addImage(imgData, 'PNG', 0, 0, 4, 6);
-    return pdf.output('blob');
+  const handleDownload = async () => {
+    try {
+      if (!initialLabel?.id) { await saveLabel(label); }
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.downloadHtml) {
+        (window as any).AndroidBridge.downloadHtml(getLabelHtml(), pageSize);
+        toast.success('Saving PDF...');
+        onFinish();
+      } else {
+        toast.loading('Generating PDF...', { id: 'pdf' });
+        const el = document.getElementById('printable-label');
+        if (el) {
+          const clone = el.cloneNode(true) as HTMLElement;
+          const container = document.createElement('div');
+          container.style.position = 'absolute';
+          container.style.left = '0';
+          container.style.top = '0';
+          container.style.zIndex = '-9999';
+          container.style.opacity = '0';
+          container.style.pointerEvents = 'none';
+          
+          container.appendChild(clone);
+          document.body.appendChild(container);
+
+          const isA6 = pageSize === 'A6';
+          const opt = {
+            margin: 0,
+            filename: `FastLabel_${new Date().getTime()}.pdf`,
+            image: { type: 'jpeg' as const, quality: 0.98 },
+            html2canvas: { scale: 1, useCORS: true, logging: false },
+            jsPDF: { unit: 'mm' as const, format: isA6 ? 'a6' : 'a5', orientation: 'portrait' as const }
+          };
+          
+          await html2pdf().set(opt).from(clone).save();
+          document.body.removeChild(container);
+          
+          toast.success('Downloaded PDF!', { id: 'pdf' });
+        } else {
+          toast.error('Failed to locate PDF element', { id: 'pdf' });
+        }
+        onFinish();
+      }
+    } catch(e) {
+      toast.error('Failed to download PDF', { id: 'pdf' });
+      console.error(e);
+    }
   };
 
   const handleShare = async () => {
     try {
-      toast.loading('Generating PDF...', { id: 'pdf' });
-      
-      if (!initialLabel?.id) {
-        await saveLabel(label);
-      }
-
-      const blob = await generatePDFBlob();
-      const file = new File([blob], `Shipping_Label_${label.recipient.name.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
-      
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: 'Shipping Label',
-          text: 'Here is the shipping label.'
-        });
-        toast.success('Ready to share!', { id: 'pdf' });
+      if (!initialLabel?.id) { await saveLabel(label); }
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.shareHtml) {
+        (window as any).AndroidBridge.shareHtml(getLabelHtml(), pageSize);
+        toast.success('Preparing to share...');
+        onFinish();
       } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = file.name;
-        a.click();
-        URL.revokeObjectURL(url);
-        toast.success('Downloaded PDF!', { id: 'pdf' });
+        toast.loading('Generating PDF...', { id: 'pdf' });
+        const el = document.getElementById('printable-label');
+        if (el) {
+          const clone = el.cloneNode(true) as HTMLElement;
+          const container = document.createElement('div');
+          container.style.position = 'absolute';
+          container.style.left = '0';
+          container.style.top = '0';
+          container.style.zIndex = '-9999';
+          container.style.opacity = '0';
+          container.style.pointerEvents = 'none';
+          
+          container.appendChild(clone);
+          document.body.appendChild(container);
+
+          const isA6 = pageSize === 'A6';
+          const opt = {
+            margin: 0,
+            filename: `FastLabel_${new Date().getTime()}.pdf`,
+            image: { type: 'jpeg' as const, quality: 0.98 },
+            html2canvas: { scale: 1, useCORS: true, logging: false },
+            jsPDF: { unit: 'mm' as const, format: isA6 ? 'a6' : 'a5', orientation: 'portrait' as const }
+          };
+          
+          const pdfBlob = await html2pdf().set(opt).from(clone).output('blob');
+          document.body.removeChild(container);
+          
+          const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: 'Shipping Label',
+              text: 'Here is the shipping label.'
+            });
+            toast.success('Ready to share!', { id: 'pdf' });
+          } else {
+            // Fallback to download
+            toast.loading('Sharing not supported, downloading instead...', { id: 'pdf' });
+            
+            const containerDL = document.createElement('div');
+            containerDL.style.position = 'absolute';
+            containerDL.style.left = '0';
+            containerDL.style.top = '0';
+            containerDL.style.zIndex = '-9999';
+            containerDL.style.opacity = '0';
+            containerDL.style.pointerEvents = 'none';
+            containerDL.appendChild(clone);
+            document.body.appendChild(containerDL);
+            
+            await html2pdf().set(opt).from(clone).save();
+            document.body.removeChild(containerDL);
+            
+            toast.success('Downloaded PDF instead!', { id: 'pdf' });
+          }
+        } else {
+          toast.error('Failed to locate PDF element', { id: 'pdf' });
+        }
+        onFinish();
       }
-      onFinish();
-    } catch (e) {
-      toast.error('Failed to generate PDF', { id: 'pdf' });
+    } catch(e) {
+      toast.error('Failed to share PDF', { id: 'pdf' });
       console.error(e);
     }
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 h-full">
-      <PrintableLabel sender={sender} label={label} />
+    <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 h-full relative overflow-x-hidden">
+      <div className="absolute left-[-9999px] top-[-9999px] overflow-hidden print:static print:left-auto print:top-auto print:overflow-visible">
+        <PrintableLabel sender={sender} label={label} pageSize={pageSize} />
+      </div>
       {/* Header */}
       <div className="px-4 pt-6 pb-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 z-10 print:hidden">
         <button 
@@ -149,7 +249,7 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
           <ChevronLeft className="w-6 h-6" />
         </button>
         <span className="font-semibold text-lg">
-          {step === 1 ? 'Recipient Details' : step === 2 ? 'Product Details' : 'Preview & Print'}
+          {step === 1 ? 'Recipient Details' : step === 2 ? 'Product Details' : 'Preview Output'}
         </span>
         <div className="w-10" /> {/* Balancer */}
       </div>
@@ -225,10 +325,34 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
         {step === 3 && (
           <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col items-center">
             
-            <p className="text-sm text-slate-500">Preview (4x6 thermal label)</p>
+            <p className="text-sm text-slate-500 mb-2">Select Output Size:</p>
+            
+            {/* Page Size Selector */}
+            <div className="w-full flex justify-center mb-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+              <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg inline-flex whitespace-nowrap">
+                <button
+                  onClick={() => handlePageSizeChange('A5')}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${pageSize === 'A5' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                >
+                  A5
+                </button>
+                <button
+                  onClick={() => handlePageSizeChange('A6')}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${pageSize === 'A6' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                >
+                  A6
+                </button>
+              </div>
+            </div>
             
             {/* Visual Screen Preview (Not the actual print one) */}
-            <div className="w-full max-w-[300px] aspect-[2/3] bg-white text-black shadow-xl border border-slate-200 rounded-sm flex flex-col overflow-hidden relative">
+            <div 
+              className="w-full bg-white text-black shadow-xl border border-slate-200 rounded-sm flex flex-col overflow-hidden relative"
+              style={{
+                maxWidth: pageSize === 'A5' ? '300px' : '280px',
+                aspectRatio: pageSize === 'A5' ? '1748/2480' : '1240/1748'
+              }}
+            >
               {/* Top Row - 30% */}
               <div className="flex flex-row w-full h-[30%] border-b-2 border-black box-border p-3 overflow-hidden">
                 <div className={`flex flex-col h-full justify-between ${sender.logo ? 'w-[75%]' : 'w-full'} pr-2 text-left`}>
@@ -264,8 +388,8 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
               </div>
             </div>
 
-            <p className="text-xs text-center text-slate-400 mt-4 max-w-[250px]">
-              Tip: Ensure your default printer is set to a thermal 4x6 or A4 in the system print dialog.
+            <p className="text-xs text-center text-slate-500 mt-4 max-w-[280px]">
+              Select paper size before exporting to ensure correct visual scaling.
             </p>
           </div>
         )}
@@ -288,21 +412,30 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
             <CheckCircle2 className="w-6 h-6" />
           </button>
         ) : (
-          <div className="flex gap-3">
-            <button 
-              onClick={handleShare}
-              className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 p-4 rounded-xl font-bold text-base active:scale-95 transition-transform flex justify-center items-center gap-2 shadow-sm border border-indigo-200"
-            >
-              <Share2 className="w-5 h-5" />
-              Share PDF
-            </button>
+          <div className="flex flex-col gap-3 w-full">
             <button 
               onClick={handlePrint}
-              className="flex-[1.5] bg-slate-900 hover:bg-slate-800 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white p-4 rounded-xl font-bold text-base active:scale-95 transition-transform flex justify-center items-center gap-2 shadow-lg"
+              className="w-full bg-slate-900 hover:bg-slate-800 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white p-4 rounded-xl font-bold text-lg active:scale-95 transition-transform flex justify-center items-center gap-2 shadow-lg"
             >
-              <Printer className="w-5 h-5" />
-              Print
+              <Printer className="w-6 h-6" />
+              Print Label
             </button>
+            <div className="flex gap-3">
+              <button 
+                onClick={handleDownload}
+                className="flex-1 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white p-3 rounded-xl font-bold text-sm active:scale-95 transition-transform flex justify-center items-center gap-2 shadow-sm border border-slate-200 dark:border-slate-700"
+              >
+                <Download className="w-5 h-5" />
+                Download PDF
+              </button>
+              <button 
+                onClick={handleShare}
+                className="flex-[1] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 p-3 rounded-xl font-bold text-sm active:scale-95 transition-transform flex justify-center items-center gap-2 shadow-sm border border-indigo-200"
+              >
+                <Share2 className="w-5 h-5" />
+                Share PDF
+              </button>
+            </div>
           </div>
         )}
       </div>

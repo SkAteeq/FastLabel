@@ -1,155 +1,47 @@
-name: Android CI
+name: Build Android APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  build:
+  build-android:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Repository Diagnostics
-      run: |
-        echo "=== Repository Structure ==="
-        ls -R
-        echo "============================"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-    - name: Validate Repository Structure
-      run: |
-        MISSING_FILES=0
-        for f in gradlew build.gradle settings.gradle app gradle/wrapper/gradle-wrapper.properties; do
-          # Check root or android/ or app/
-          if [ ! -e "$f" ] && [ ! -e "android/$f" ] && [ ! -e "app/$f" ]; then
-            MISSING_FILES=1
-          fi
-        done
-        if [ "$MISSING_FILES" -eq 1 ]; then
-          echo "::error::Missing essential Android project files (gradlew, build.gradle, settings.gradle, app/, gradle/wrapper/)."
-          echo "Please ensure you upload the complete Android Studio project (not just source files)."
-          exit 1
-        fi
+      - name: Setup Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-    - name: Validate Gradle Wrapper
-      run: |
-        WRAPPER_JAR=""
-        if [ -f "./gradle/wrapper/gradle-wrapper.jar" ]; then
-          WRAPPER_JAR="./gradle/wrapper/gradle-wrapper.jar"
-        elif [ -f "android/gradle/wrapper/gradle-wrapper.jar" ]; then
-          WRAPPER_JAR="android/gradle/wrapper/gradle-wrapper.jar"
-        elif [ -f "app/gradle/wrapper/gradle-wrapper.jar" ]; then
-          WRAPPER_JAR="app/gradle/wrapper/gradle-wrapper.jar"
-        fi
+      - name: Install dependencies
+        run: npm install
 
-        if [ -z "$WRAPPER_JAR" ]; then
-          echo "::error::gradle-wrapper.jar not found."
-          exit 1
-        fi
-        
-        SIZE=$(stat -c%s "$WRAPPER_JAR" 2>/dev/null || stat -f%z "$WRAPPER_JAR" 2>/dev/null)
-        if [ "$SIZE" -lt 40000 ]; then
-          echo "::error::gradle-wrapper.jar is corrupted or invalid (size: $SIZE). Please run 'gradle wrapper' locally and commit the jar."
-          exit 1
-        fi
-        echo "Valid gradle-wrapper.jar found at $WRAPPER_JAR"
+      - name: Build Web App
+        run: npm run build
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
+      - name: Sync Capacitor
+        run: npx cap sync android
 
-    - name: Install dependencies & Build Web Assets
-      run: |
-        npm install
-        npm run build
-        npx cap sync android
+      - name: Build Android APK
+        working-directory: ./android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: gradle
-        # Provide dependency path to avoid detection failure when project is in a subdirectory
-        cache-dependency-path: |
-          *.gradle*
-          **/gradle-wrapper.properties
-
-    - name: Locate and Execute Gradle Wrapper
-      id: gradle_build
-      run: |
-        PROJECT_DIR=""
-        
-        # Dynamic Project Path Detection
-        if [ -f "./gradlew" ]; then
-          PROJECT_DIR="."
-        elif [ -f "android/gradlew" ]; then
-          PROJECT_DIR="android"
-        elif [ -f "app/gradlew" ]; then
-          PROJECT_DIR="app"
-        else
-          echo "::error::Gradle wrapper (gradlew) not found in expected locations (root, android/, app/)."
-          echo "Please generate it locally run 'gradle wrapper' and commit."
-          exit 1
-        fi
-
-        echo "Gradle wrapper found in: $PROJECT_DIR"
-        
-        # Change to the detected directory
-        cd "$PROJECT_DIR"
-        
-        # Grant execute permission
-        echo "Granting execute permission to gradlew..."
-        chmod +x gradlew
-        
-        # Run Gradle command
-        echo "Building release APK..."
-        ./gradlew assembleRelease || { echo "::error::Gradle build failed"; exit 1; }
-        
-        # APK Output Validation
-        if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
-          echo "APK generated successfully at app/build/outputs/apk/release/app-release.apk"
-          if [ "$PROJECT_DIR" = "." ]; then
-            echo "APK_PATH=app/build/outputs/apk/release/app-release.apk" >> $GITHUB_ENV
-          else
-            echo "APK_PATH=$PROJECT_DIR/app/build/outputs/apk/release/app-release.apk" >> $GITHUB_ENV
-          fi
-        elif [ -f "app/build/outputs/apk/release/app-release-unsigned.apk" ]; then
-          echo "APK generated successfully at app/build/outputs/apk/release/app-release-unsigned.apk"
-          if [ "$PROJECT_DIR" = "." ]; then
-            echo "APK_PATH=app/build/outputs/apk/release/app-release-unsigned.apk" >> $GITHUB_ENV
-          else
-            echo "APK_PATH=$PROJECT_DIR/app/build/outputs/apk/release/app-release-unsigned.apk" >> $GITHUB_ENV
-          fi
-        elif [ -f "build/outputs/apk/release/app-release.apk" ]; then
-          # Fallback if no app/ subdirectory
-          echo "APK generated successfully at build/outputs/apk/release/app-release.apk"
-          if [ "$PROJECT_DIR" = "." ]; then
-            echo "APK_PATH=build/outputs/apk/release/app-release.apk" >> $GITHUB_ENV
-          else
-            echo "APK_PATH=$PROJECT_DIR/build/outputs/apk/release/app-release.apk" >> $GITHUB_ENV
-          fi
-        elif [ -f "build/outputs/apk/release/app-release-unsigned.apk" ]; then
-          echo "APK generated successfully at build/outputs/apk/release/app-release-unsigned.apk"
-          if [ "$PROJECT_DIR" = "." ]; then
-            echo "APK_PATH=build/outputs/apk/release/app-release-unsigned.apk" >> $GITHUB_ENV
-          else
-            echo "APK_PATH=$PROJECT_DIR/build/outputs/apk/release/app-release-unsigned.apk" >> $GITHUB_ENV
-          fi
-        else
-          echo "::error::APK was not found in expected output directories."
-          echo "Expected: app/build/outputs/apk/release/app-release.apk"
-          echo "Actual APKs found:"
-          find . -name "*.apk"
-          exit 1
-        fi
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-release
-        path: ${{ env.APK_PATH }}
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FastLabel-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
