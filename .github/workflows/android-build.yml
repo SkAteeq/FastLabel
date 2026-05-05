@@ -19,14 +19,69 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+    - name: Repository Diagnostics
+      run: |
+        echo "=== Repository Structure ==="
+        ls -R
+        echo "============================"
 
-    - name: Build with Gradle
-      run: ./gradlew assembleRelease
+    - name: Locate and Execute Gradle Wrapper
+      id: gradle_build
+      run: |
+        PROJECT_DIR=""
+        
+        # Dynamic Project Path Detection
+        if [ -f "./gradlew" ]; then
+          PROJECT_DIR="."
+        elif [ -f "android/gradlew" ]; then
+          PROJECT_DIR="android"
+        elif [ -f "app/gradlew" ]; then
+          PROJECT_DIR="app"
+        else
+          echo "::error::Gradle wrapper (gradlew) not found in expected locations (root, android/, app/)."
+          echo "Please generate it locally run 'gradle wrapper' and commit."
+          exit 1
+        fi
+
+        echo "Gradle wrapper found in: $PROJECT_DIR"
+        
+        # Change to the detected directory
+        cd "$PROJECT_DIR"
+        
+        # Grant execute permission
+        echo "Granting execute permission to gradlew..."
+        chmod +x gradlew
+        
+        # Run Gradle command
+        echo "Building release APK..."
+        ./gradlew assembleRelease || { echo "::error::Gradle build failed"; exit 1; }
+        
+        # APK Output Validation
+        if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
+          echo "APK generated successfully at app/build/outputs/apk/release/app-release.apk"
+          if [ "$PROJECT_DIR" = "." ]; then
+            echo "APK_PATH=app/build/outputs/apk/release/app-release.apk" >> $GITHUB_ENV
+          else
+            echo "APK_PATH=$PROJECT_DIR/app/build/outputs/apk/release/app-release.apk" >> $GITHUB_ENV
+          fi
+        elif [ -f "build/outputs/apk/release/app-release.apk" ]; then
+          # Fallback if no app/ subdirectory
+          echo "APK generated successfully at build/outputs/apk/release/app-release.apk"
+          if [ "$PROJECT_DIR" = "." ]; then
+            echo "APK_PATH=build/outputs/apk/release/app-release.apk" >> $GITHUB_ENV
+          else
+            echo "APK_PATH=$PROJECT_DIR/build/outputs/apk/release/app-release.apk" >> $GITHUB_ENV
+          fi
+        else
+          echo "::error::APK was not found in expected output directories."
+          echo "Expected: app/build/outputs/apk/release/app-release.apk"
+          echo "Actual APKs found:"
+          find . -name "*.apk"
+          exit 1
+        fi
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: app-release
-        path: app/build/outputs/apk/release/app-release.apk
+        path: ${{ env.APK_PATH }}
