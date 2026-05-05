@@ -15,6 +15,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import android.util.Base64
+import android.os.Build
+import android.provider.MediaStore
 
 class WebAppInterface(private val context: Context) {
     private var hiddenWebView: WebView? = null
@@ -90,20 +92,39 @@ class WebAppInterface(private val context: Context) {
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
         val fileName = "FastLabel_$timestamp.pdf"
 
-        val dir = if (action == "download") {
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        } else {
-            // Use external files dir to ensure FileProvider can access it
-            context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS) ?: context.cacheDir
-        }
-        
-        dir.mkdirs()
-        val pdfFile = File(dir, fileName)
-        
-        try {
-            pdfFile.createNewFile()
-            val pfd = ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_WRITE)
+        val pfd: ParcelFileDescriptor?
+        val destFile: File?
 
+        if (action == "download" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val resolver = context.contentResolver
+            val contentValues = android.content.ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            }
+            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+            if (uri != null) {
+                pfd = resolver.openFileDescriptor(uri, "rw")
+            } else {
+                return
+            }
+            destFile = null
+        } else {
+            val dir = if (action == "download") {
+                @Suppress("DEPRECATION")
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            } else {
+                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS) ?: context.cacheDir
+            }
+            dir.mkdirs()
+            destFile = File(dir, fileName)
+            destFile.createNewFile()
+            pfd = ParcelFileDescriptor.open(destFile, ParcelFileDescriptor.MODE_READ_WRITE)
+        }
+
+        if (pfd == null) return
+
+        try {
             val mediaSize = if (pageSize == "A5") PrintAttributes.MediaSize.ISO_A5 else PrintAttributes.MediaSize.ISO_A6
             
             printAdapter.onLayout(
@@ -121,21 +142,26 @@ class WebAppInterface(private val context: Context) {
                 object : android.print.PrintDocumentAdapter.WriteResultCallback() {
                     override fun onWriteFinished(pages: Array<out android.print.PageRange>?) {
                         super.onWriteFinished(pages)
-                        pfd.close()
+                        try { pfd.close() } catch(e: Exception) {}
 
-                        if (action == "share") {
-                            sharePdfFile(pdfFile)
+                        if (action == "share" && destFile != null) {
+                            sharePdfFile(destFile)
+                        } else if (action == "download") {
+                            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                android.widget.Toast.makeText(context, "PDF saved to Downloads", android.widget.Toast.LENGTH_LONG).show()
+                            }
                         }
                     }
                 }
             )
         } catch (e: Exception) {
             e.printStackTrace()
+            try { pfd.close() } catch (e2: Exception) {}
         }
     }
 
     private fun sharePdfFile(file: File) {
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "application/pdf"
