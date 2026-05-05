@@ -75,7 +75,13 @@ public class WebAppInterface {
                 WebView webView = new WebView(context);
                 hiddenWebView = webView;
 
+                // Configure WebView for high-quality rendering
                 webView.getSettings().setJavaScriptEnabled(false);
+                webView.getSettings().setUseWideViewPort(true);
+                webView.getSettings().setLoadWithOverviewMode(true);
+                webView.getSettings().setDefaultTextEncodingName("utf-8");
+                webView.getSettings().setDatabaseEnabled(true);
+                webView.getSettings().setDomStorageEnabled(true);
                 
                 webView.setWebViewClient(new WebViewClient() {
                     @Override
