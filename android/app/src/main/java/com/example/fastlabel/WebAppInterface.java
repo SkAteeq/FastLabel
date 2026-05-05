@@ -140,22 +140,13 @@ public class WebAppInterface {
             final ParcelFileDescriptor finalPfd = pfd;
             final File finalDestFile = destFile;
             
-            printAdapter.onLayout(
-                null,
+            android.print.PdfPrint.print(
+                printAdapter,
                 new PrintAttributes.Builder().setMediaSize(mediaSize).build(),
-                null,
-                new android.print.PrintDocumentAdapter.LayoutResultCallback() {},
-                null
-            );
-
-            printAdapter.onWrite(
-                new android.print.PageRange[]{android.print.PageRange.ALL_PAGES},
                 pfd,
-                null,
-                new android.print.PrintDocumentAdapter.WriteResultCallback() {
+                new android.print.PdfPrint.Callback() {
                     @Override
-                    public void onWriteFinished(android.print.PageRange[] pages) {
-                        super.onWriteFinished(pages);
+                    public void onSuccess() {
                         try { finalPfd.close(); } catch(Exception e) {}
 
                         if ("share".equals(action) && finalDestFile != null) {
@@ -168,6 +159,17 @@ public class WebAppInterface {
                                 }
                             });
                         }
+                    }
+
+                    @Override
+                    public void onFailure() {
+                        try { finalPfd.close(); } catch(Exception e) {}
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(context, "Failed to generate PDF", Toast.LENGTH_LONG).show();
+                            }
+                        });
                     }
                 }
             );
