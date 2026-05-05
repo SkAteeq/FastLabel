@@ -32,11 +32,20 @@ jobs:
         run: npm run build
 
       - name: Sync Capacitor
-        run: npx cap sync android
+        run: |
+          if [ ! -d "android" ]; then
+            echo "Android platform not found, adding..."
+            npx cap add android
+          fi
+          npx cap sync android
 
       - name: Build Android APK
         working-directory: ./android
         run: |
+          if [ ! -f "gradlew" ]; then
+            echo "gradlew not found, generating wrapper..."
+            gradle wrapper
+          fi
           chmod +x gradlew
           ./gradlew assembleDebug
 
