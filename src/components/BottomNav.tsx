@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Clock, Settings, FilePlus } from 'lucide-react';
+import { Home, Clock } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export type TabType = 'home' | 'history' | 'settings';
@@ -10,49 +10,43 @@ interface BottomNavProps {
 }
 
 export function BottomNav({ currentTab, onChange }: BottomNavProps) {
-  return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-safe pb-4 pt-3 px-6 flex justify-between items-center z-50">
-      <button 
-        onClick={() => onChange('home')}
-        className={cn(
-          "flex flex-col items-center gap-1 min-w-[64px]",
-          currentTab === 'home' ? "text-emerald-500 dark:text-emerald-400" : "text-slate-500"
-        )}
-      >
-        <Home className="w-6 h-6" />
-        <span className="text-xs font-medium">Home</span>
-      </button>
+  if (currentTab === 'settings') return null;
 
-      <div className="relative -top-6">
+  return (
+    <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-safe z-50">
+      <div className="flex justify-around items-center h-16">
         <button 
           onClick={() => onChange('home')}
-          className="bg-emerald-500 hover:bg-emerald-600 text-white w-14 h-14 rounded-full flex justify-center items-center shadow-lg active:scale-95 transition-transform"
+          className={cn(
+            "flex flex-col items-center justify-center w-full h-full gap-1 active:scale-95 transition-transform",
+            currentTab === 'home' ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-slate-400"
+          )}
         >
-          <FilePlus className="w-7 h-7" />
+          <div className={cn(
+            "px-4 py-1 rounded-full transition-colors", 
+            currentTab === 'home' && "bg-emerald-100 dark:bg-emerald-900/40 font-bold"
+          )}>
+            <Home className="w-6 h-6" strokeWidth={currentTab === 'home' ? 2.5 : 2} />
+          </div>
+          <span className="text-[11px] font-medium">Home</span>
+        </button>
+
+        <button 
+          onClick={() => onChange('history')}
+          className={cn(
+            "flex flex-col items-center justify-center w-full h-full gap-1 active:scale-95 transition-transform",
+            currentTab === 'history' ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-slate-400"
+          )}
+        >
+          <div className={cn(
+            "px-4 py-1 rounded-full transition-colors", 
+            currentTab === 'history' && "bg-emerald-100 dark:bg-emerald-900/40 font-bold"
+          )}>
+            <Clock className="w-6 h-6" strokeWidth={currentTab === 'history' ? 2.5 : 2} />
+          </div>
+          <span className="text-[11px] font-medium">History</span>
         </button>
       </div>
-
-      <button 
-        onClick={() => onChange('history')}
-        className={cn(
-          "flex flex-col items-center gap-1 min-w-[64px]",
-          currentTab === 'history' ? "text-emerald-500 dark:text-emerald-400" : "text-slate-500"
-        )}
-      >
-        <Clock className="w-6 h-6" />
-        <span className="text-xs font-medium">History</span>
-      </button>
-
-      <button 
-        onClick={() => onChange('settings')}
-        className={cn(
-          "flex flex-col items-center gap-1 min-w-[64px]",
-          currentTab === 'settings' ? "text-emerald-500 dark:text-emerald-400" : "text-slate-500"
-        )}
-      >
-        <Settings className="w-6 h-6" />
-        <span className="text-xs font-medium">Profile</span>
-      </button>
     </div>
   );
 }

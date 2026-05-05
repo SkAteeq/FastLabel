@@ -6,7 +6,7 @@ import { BottomNav, TabType } from './components/BottomNav';
 import { SettingsView } from './views/SettingsView';
 import { HistoryView } from './views/HistoryView';
 import { CreatorWizard } from './views/CreatorWizard';
-import { Package } from 'lucide-react';
+import { Package, Settings as SettingsIcon, ChevronLeft, Plus } from 'lucide-react';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<TabType>('home');
@@ -73,10 +73,30 @@ export default function App() {
       {!creatingLabel && (
         <>
           {/* Top Header */}
-          <div className="px-6 pt-8 pb-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 safe-top">
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <Package className="text-emerald-500 w-7 h-7" /> FastLabel
-            </h1>
+          <div className="px-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 safe-top flex justify-between items-center h-16 shrink-0 z-10 shadow-sm">
+            {currentTab === 'settings' ? (
+              <div className="flex items-center gap-1">
+                <button 
+                  onClick={() => setCurrentTab('home')} 
+                  className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
+                >
+                  <ChevronLeft className="w-6 h-6 text-slate-800 dark:text-slate-200" />
+                </button>
+                <h1 className="text-xl font-semibold text-slate-900 dark:text-white">Settings</h1>
+              </div>
+            ) : (
+              <>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Package className="text-emerald-600 dark:text-emerald-500 w-6 h-6" /> FastLabel
+                </h1>
+                <button 
+                  onClick={() => setCurrentTab('settings')} 
+                  className="p-2 -mr-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
+                >
+                  <SettingsIcon className="w-6 h-6 text-slate-700 dark:text-slate-300" />
+                </button>
+              </>
+            )}
           </div>
 
           <div className="flex-1 overflow-hidden flex flex-col relative print:hidden">
@@ -84,20 +104,32 @@ export default function App() {
             {currentTab === 'settings' && <SettingsView onProfileSaved={loadProfile} />}
             
             {currentTab === 'home' && !creatingLabel && (
-              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              <div className="flex-1 flex flex-col justify-center items-center p-6 bg-slate-50 dark:bg-slate-950">
                 <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mb-6">
-                  <Package className="w-12 h-12 text-emerald-500" />
+                  <Package className="w-12 h-12 text-emerald-600 dark:text-emerald-500" />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Create New Label</h2>
-                <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-[280px]">
-                  Generate printing-ready shipping labels instantly without the internet.
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2 text-center">Ready to Print</h2>
+                <p className="text-slate-500 dark:text-slate-400 text-center max-w-[280px] mb-8">
+                  Create a new shipping label instantly. No internet connection required.
                 </p>
+              </div>
+            )}
+
+            {currentTab !== 'settings' && (
+              <div className="absolute bottom-6 right-6">
+                <button
+                  onClick={() => handleTabChange('home')}
+                  className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white rounded-2xl p-4 shadow-lg shadow-emerald-500/30 active:scale-95 transition-all flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-6 h-6" />
+                  <span className="font-semibold px-1">New Label</span>
+                </button>
               </div>
             )}
           </div>
           
           <div className="print:hidden">
-            <BottomNav currentTab={currentTab} onChange={handleTabChange} />
+            <BottomNav currentTab={currentTab} onChange={setCurrentTab} />
           </div>
         </>
       )}

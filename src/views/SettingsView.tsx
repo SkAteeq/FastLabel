@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Save, Upload } from 'lucide-react';
+import { Camera, Save } from 'lucide-react';
 import { getSenderProfile, saveSenderProfile } from '../db';
 import { SenderProfile } from '../types';
 
@@ -48,9 +48,7 @@ export function SettingsView({ onProfileSaved }: SettingsViewProps) {
 
   return (
     <div className="flex-1 flex flex-col pb-24 overflow-y-auto no-scrollbar bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-4">
-      <h2 className="text-2xl font-bold mb-6">Sender Profile</h2>
-      
-      <div className="space-y-5 bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+      <div className="space-y-5 bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 mt-2">
         
         <div className="flex flex-col items-center mb-6">
           <div 
@@ -63,7 +61,7 @@ export function SettingsView({ onProfileSaved }: SettingsViewProps) {
               <Camera className="w-8 h-8 text-slate-400" />
             )}
           </div>
-          <p className="text-sm text-slate-500 mt-2">Tap to upload Logo</p>
+          <p className="text-[13px] text-slate-500 mt-3 font-medium">Tap to upload Logo</p>
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -74,9 +72,9 @@ export function SettingsView({ onProfileSaved }: SettingsViewProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Business Name *</label>
+          <label className="block text-[13px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Business Name *</label>
           <input 
-            className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-4 min-h-[48px] focus:ring-2 focus:ring-emerald-500 outline-none"
+            className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-4 min-h-[48px] focus:ring-2 focus:ring-emerald-500 outline-none text-[15px]"
             placeholder="Your Business Name"
             value={profile.businessName}
             onChange={e => setProfile({...profile, businessName: e.target.value})}
@@ -84,10 +82,10 @@ export function SettingsView({ onProfileSaved }: SettingsViewProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Phone Number</label>
+          <label className="block text-[13px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Phone Number</label>
           <input 
             type="tel"
-            className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-4 min-h-[48px] focus:ring-2 focus:ring-emerald-500 outline-none"
+            className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-4 min-h-[48px] focus:ring-2 focus:ring-emerald-500 outline-none text-[15px]"
             placeholder="e.g. +1 234 567 8900"
             value={profile.phone}
             onChange={e => setProfile({...profile, phone: e.target.value})}
@@ -95,9 +93,9 @@ export function SettingsView({ onProfileSaved }: SettingsViewProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Return Address *</label>
+          <label className="block text-[13px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Return Address *</label>
           <textarea 
-            className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-4 min-h-[100px] focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
+            className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-4 min-h-[100px] focus:ring-2 focus:ring-emerald-500 outline-none resize-none text-[15px]"
             placeholder="Street, City, Postal Code"
             rows={4}
             value={profile.address}
@@ -108,7 +106,7 @@ export function SettingsView({ onProfileSaved }: SettingsViewProps) {
 
       <button 
         onClick={handleSave}
-        className="mt-6 flex items-center justify-center gap-2 w-full bg-slate-900 dark:bg-emerald-500 text-white p-4 rounded-xl font-semibold active:scale-95 transition-transform"
+        className="mt-6 flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white p-4 min-h-[48px] rounded-xl font-bold active:scale-95 transition-transform text-[15px]"
       >
         <Save className="w-5 h-5" />
         Save Profile

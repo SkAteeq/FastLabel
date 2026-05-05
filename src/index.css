@@ -15,6 +15,17 @@
     margin: 0;
     size: 4in 6in;
   }
+  html, body {
+    width: 4in;
+    height: 6in;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white;
+    overflow: hidden;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+    print-color-adjust: exact;
+  }
   body * {
     visibility: hidden;
   }
@@ -25,9 +36,14 @@
     position: absolute;
     left: 0;
     top: 0;
-    width: 4in;
-    height: 6in;
-    margin: 0;
+    width: 4in !important;
+    height: 6in !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
     box-sizing: border-box;
+    page-break-after: avoid;
+    page-break-before: avoid;
+    page-break-inside: avoid;
   }
 }

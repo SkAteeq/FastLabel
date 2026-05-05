@@ -22,8 +22,8 @@ export default defineConfig(({mode}) => {
           theme_color: '#10b981',
           icons: [
             {
-              src: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTBiOTgxIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0ibTE2LjA4OCA5LjEyNC0uODE2IDIuMTA2Yy0uMTA5LjI4LS4xNjYuNDItLjI1OC41MjVhMSAxIDAgMCAxLS42LjI4M2MtLjEzLjAyMy0uMzAxIC4wMjMtLjY0My4wMjNIMTBoLTEuMjU4Yy0uMzQxIDAtLjUwOSAwLS42NC0uMDIzYTEgMSAwIDAgMS0uNi0uMjgyYy0uMDkxLS4xMDQtLjE1LS4yNDUtLjI1OC0uNTI1bC0uODItMi4xMTRhMSAxIDAgMCAwLS45MjItLjU2OWgtMS4zMWEyLjg3IDIuODcgMCAwIDAtMi44NyAyLjg3djguMjZhMi44NyAyLjg3IDAgMCAwIDIuODcgMi44N0gyMGEyLjg3IDIuODcgMCAwIDAgMi44Ny0yLjg3di04LjI2YTIuODcgMi44NyAwIDAgMC0yLjg3LTIuODdoLTEuMzFhMSAxIDAgMCAwLS45Mi41NjlaIi8+PHBhdGggZD0iTTEyIDN2NiIvPjxwYXRoIGQ9Ik05IDEyaDYiLz48L3N2Zz4=',
-              sizes: '192x192',
+              src: '/icon.svg',
+              sizes: '192x192 512x512',
               type: 'image/svg+xml'
             }
           ]

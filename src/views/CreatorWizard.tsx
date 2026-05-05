@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ClipboardPaste, Printer, Search, PlusCircle, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ClipboardPaste, Printer, Search, PlusCircle, CheckCircle2, Share2 } from 'lucide-react';
 import { SenderProfile, LabelRecord } from '../types';
 import { saveLabel } from '../db';
 import { PrintableLabel } from '../components/PrintableLabel';
 import toast from 'react-hot-toast';
+import { jsPDF } from 'jspdf';
+import domtoimage from 'dom-to-image';
 
 interface CreatorWizardProps {
   sender: SenderProfile;
@@ -61,6 +63,78 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
     toast.success('Preparing print...');
     window.print();
     onFinish();
+  };
+
+  const generatePDFBlob = async () => {
+    const el = document.getElementById('printable-label');
+    if (!el) throw new Error('Label not found');
+    
+    // Check original state
+    const originalStyle = el.style.cssText;
+    const originalClassName = el.className;
+    
+    // Temporarily expose the label purely for capturing
+    el.className = "bg-white text-black font-sans box-border overflow-hidden absolute top-0 left-0 z-50 flex flex-col";
+    el.style.width = '384px'; // 4 inches at 96 dpi
+    el.style.height = '576px'; // 6 inches at 96 dpi
+
+    // Try using dom-to-image to bypass oklch parsing errors inside html2canvas
+    const imgData = await domtoimage.toPng(el, {
+      width: 384 * 3, // 4 inches at 96 dpi * 3 for higher quality
+      height: 576 * 3,
+      style: {
+        transform: 'scale(3)',
+        transformOrigin: 'top left',
+        width: '384px',
+        height: '576px'
+      }
+    });
+
+    // Restore
+    el.className = originalClassName;
+    el.style.cssText = originalStyle;
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "in",
+      format: [4, 6]
+    });
+    
+    pdf.addImage(imgData, 'PNG', 0, 0, 4, 6);
+    return pdf.output('blob');
+  };
+
+  const handleShare = async () => {
+    try {
+      toast.loading('Generating PDF...', { id: 'pdf' });
+      
+      if (!initialLabel?.id) {
+        await saveLabel(label);
+      }
+
+      const blob = await generatePDFBlob();
+      const file = new File([blob], `Shipping_Label_${label.recipient.name.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'Shipping Label',
+          text: 'Here is the shipping label.'
+        });
+        toast.success('Ready to share!', { id: 'pdf' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success('Downloaded PDF!', { id: 'pdf' });
+      }
+      onFinish();
+    } catch (e) {
+      toast.error('Failed to generate PDF', { id: 'pdf' });
+      console.error(e);
+    }
   };
 
   return (
@@ -171,7 +245,7 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
               
               {/* Middle Row - 50% */}
               <div className="w-full h-[50%] border-b-2 border-black box-border p-3 flex flex-col justify-start overflow-hidden text-left">
-                <div className="text-[10px] font-medium uppercase tracking-widest text-gray-800 mb-1.5">Ship To:</div>
+                <div className="text-[10px] font-medium uppercase tracking-widest text-[#333333] mb-1.5">Ship To:</div>
                 <div className="font-bold text-xl leading-snug uppercase mb-1.5 break-words">{label.recipient.name}</div>
                 {label.recipient.phone && <div className="text-sm font-semibold mb-2">Tel: {label.recipient.phone}</div>}
                 <div className="text-xs font-normal whitespace-pre-line leading-relaxed break-words">{label.recipient.address}</div>
@@ -179,13 +253,13 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
 
               {/* Bottom Row - 20% */}
               <div className="w-full h-[20%] box-border p-3 flex flex-col justify-start overflow-hidden text-left">
-                <div className="text-[10px] font-medium uppercase tracking-widest text-gray-800 mb-1">Product Details:</div>
+                <div className="text-[10px] font-medium uppercase tracking-widest text-[#333333] mb-1">Product Details:</div>
                 {label.productDetails ? (
                   <div className="text-xs font-normal whitespace-pre-line break-words leading-relaxed">
                     {label.productDetails}
                   </div>
                 ) : (
-                  <div className="text-xs italic text-gray-500">No details provided</div>
+                  <div className="text-xs italic text-[#666666]">No details provided</div>
                 )}
               </div>
             </div>
@@ -214,13 +288,22 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
             <CheckCircle2 className="w-6 h-6" />
           </button>
         ) : (
-          <button 
-            onClick={handlePrint}
-            className="w-full bg-slate-900 hover:bg-slate-800 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white p-4 rounded-xl font-bold text-lg active:scale-95 transition-transform flex justify-center items-center gap-2 shadow-lg"
-          >
-            <Printer className="w-6 h-6" />
-            Print Label
-          </button>
+          <div className="flex gap-3">
+            <button 
+              onClick={handleShare}
+              className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 p-4 rounded-xl font-bold text-base active:scale-95 transition-transform flex justify-center items-center gap-2 shadow-sm border border-indigo-200"
+            >
+              <Share2 className="w-5 h-5" />
+              Share PDF
+            </button>
+            <button 
+              onClick={handlePrint}
+              className="flex-[1.5] bg-slate-900 hover:bg-slate-800 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white p-4 rounded-xl font-bold text-base active:scale-95 transition-transform flex justify-center items-center gap-2 shadow-lg"
+            >
+              <Printer className="w-5 h-5" />
+              Print
+            </button>
+          </div>
         )}
       </div>
     </div>

@@ -29,7 +29,7 @@ export function PrintableLabel({ sender, label }: PrintableLabelProps) {
 
       {/* Row 2: Middle Row (SHIP TO – PRIMARY FOCUS) – 50% height */}
       <div className="w-full h-[50%] border-b-2 border-black box-border p-4 flex flex-col justify-start overflow-hidden text-left">
-        <div className="text-xs font-medium uppercase tracking-widest text-gray-800 mb-2">Ship To:</div>
+        <div className="text-xs font-medium uppercase tracking-widest text-[#333333] mb-2">Ship To:</div>
         <div className="text-2xl font-bold uppercase leading-snug mb-2 tracking-wide break-words">
           {label.recipient.name}
         </div>
@@ -45,13 +45,13 @@ export function PrintableLabel({ sender, label }: PrintableLabelProps) {
 
       {/* Row 3: Bottom Row (PRODUCT DETAILS) – 20% height */}
       <div className="w-full h-[20%] box-border p-4 flex flex-col justify-start overflow-hidden text-left">
-        <div className="text-xs font-medium uppercase tracking-widest text-gray-800 mb-1">Product Details:</div>
+        <div className="text-xs font-medium uppercase tracking-widest text-[#333333] mb-1">Product Details:</div>
         {label.productDetails ? (
           <div className="text-sm font-normal whitespace-pre-line break-words leading-relaxed">
             {label.productDetails}
           </div>
         ) : (
-          <div className="text-sm italic text-gray-500">No details provided</div>
+          <div className="text-sm italic text-[#666666]">No details provided</div>
         )}
       </div>
       
