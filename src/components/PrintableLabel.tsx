@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { SenderProfile, LabelRecord } from '../types';
-import { MapPin, Phone, Home, ClipboardList, Truck, Building2, Package, QrCode, Star, Umbrella, ArrowUpFromLine, Send, Mail } from 'lucide-react';
+import { MapPin, Phone, Home, ClipboardList, Building2, Package, QrCode, Star, Umbrella, ArrowUpFromLine, Send, Mail } from 'lucide-react';
 
 interface PrintableLabelProps {
   sender?: SenderProfile;
@@ -52,10 +52,6 @@ export function PrintableLabel({ sender, label, pageSize = 'A6', id = "printable
   
   // Order ID
   const orderId = label.orderId || (label.id ? `ORD-${String(label.id).padStart(6, '0')}` : `ORD-${String(Math.floor((label.timestamp || Date.now()) / 1000)).slice(-6)}`);
-  
-  // Shipping Courier Partner
-  const courier = label.courierPartner || 'Express Ship';
-  const courierFontSize = courier.length > 15 ? (isA6 ? '11px' : '13px') : (courier.length > 10 ? (isA6 ? '13px' : '16px') : (isA6 ? '16px' : '20px'));
 
   return (
     <div 
@@ -130,7 +126,7 @@ export function PrintableLabel({ sender, label, pageSize = 'A6', id = "printable
             
             <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
               <Home size={isA6 ? 16 : 20} style={{ flexShrink: 0, marginTop: '2px' }} />
-              <div style={{ fontSize: isA6 ? '12px' : '14px', fontWeight: '600', whiteSpace: 'pre-wrap', lineHeight: 1.4, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+              <div style={{ fontSize: isA6 ? '15px' : '18px', fontWeight: '600', whiteSpace: 'pre-wrap', lineHeight: 1.4, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
                 {label.recipient.address}
               </div>
             </div>
@@ -145,26 +141,6 @@ export function PrintableLabel({ sender, label, pageSize = 'A6', id = "printable
                 </div>
               </div>
             )}
-          </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: isA6 ? '100px' : '140px', flexShrink: 0 }}>
-            <div style={{ border: '2px solid #0B192C', borderRadius: '8px', overflow: 'hidden', textAlign: 'center' }}>
-              <div style={{ backgroundColor: '#0B192C', color: '#fff', fontSize: isA6 ? '10px' : '12px', fontWeight: 'bold', padding: '4px' }}>
-                DELIVERY TYPE
-              </div>
-              <div style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                <Truck size={isA6 ? 14 : 18} color="#0B192C" />
-                <span style={{ fontSize: isA6 ? '12px' : '14px', fontWeight: 'bold', color: '#1e3a8a' }}>STANDARD</span>
-              </div>
-            </div>
-            <div style={{ border: '2px solid #0B192C', borderRadius: '8px', overflow: 'hidden', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ backgroundColor: '#0B192C', color: '#fff', fontSize: isA6 ? '10px' : '12px', fontWeight: 'bold', padding: '4px' }}>
-                COURIER
-              </div>
-              <div style={{ padding: '8px', display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                 <span style={{ fontSize: courierFontSize, fontWeight: '900', color: '#dc2626', lineHeight: 1.1, textTransform: 'uppercase', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%', display: 'inline-block' }}>{courier}</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>

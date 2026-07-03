@@ -25,7 +25,6 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
     if (initialLabel) {
       return {
         orderId: '',
-        courierPartner: 'Delhivery',
         ...initialLabel
       };
     }
@@ -34,8 +33,7 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
       recipient: { name: '', phone: '', address: '' },
       productDetails: '',
       timestamp: Date.now(),
-      orderId: randomId,
-      courierPartner: 'Delhivery'
+      orderId: randomId
     };
   });
 
@@ -361,32 +359,6 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Shipping Courier Partner *</label>
-                <div className="flex flex-wrap gap-1.5 mb-2.5">
-                  {['Delhivery', 'Blue Dart', 'DTDC', 'Xpressbees', 'Ecom Express', 'India Post', 'Shadowfax', 'Ekart'].map(partner => (
-                    <button
-                      key={partner}
-                      type="button"
-                      onClick={() => setLabel({ ...label, courierPartner: partner })}
-                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all active:scale-95 ${
-                        label.courierPartner === partner
-                          ? 'bg-emerald-500/10 border-emerald-500 text-emerald-700 dark:text-emerald-400'
-                          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
-                      }`}
-                    >
-                      {partner}
-                    </button>
-                  ))}
-                </div>
-                <input 
-                  className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-4 min-h-[48px] focus:ring-2 focus:ring-emerald-500 outline-none text-lg"
-                  placeholder="Select or Enter Courier Partner"
-                  value={label.courierPartner || ''}
-                  onChange={e => setLabel({...label, courierPartner: e.target.value})}
-                />
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium mb-1.5 text-slate-500">Product Details (Optional)</label>
                 <textarea 
                   className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-4 min-h-[120px] focus:ring-2 focus:ring-emerald-500 outline-none resize-none text-lg"
@@ -462,10 +434,6 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
               } else if (step === 2) {
                 if (!label.orderId || !label.orderId.trim()) {
                   toast.error('Failed to update the setting due to a validation error: Order ID is required.');
-                  return;
-                }
-                if (!label.courierPartner || !label.courierPartner.trim()) {
-                  toast.error('Failed to update the setting due to a validation error: Shipping Courier Partner is required.');
                   return;
                 }
               }
