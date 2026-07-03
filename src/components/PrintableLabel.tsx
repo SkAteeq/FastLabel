@@ -5,9 +5,10 @@ interface PrintableLabelProps {
   sender?: SenderProfile;
   label: LabelRecord;
   pageSize?: 'A6' | 'A5';
+  id?: string;
 }
 
-export function PrintableLabel({ sender, label, pageSize = 'A6' }: PrintableLabelProps) {
+export function PrintableLabel({ sender, label, pageSize = 'A6', id = "printable-label" }: PrintableLabelProps) {
   if (!sender) return null;
 
   const isA6 = pageSize === 'A6';
@@ -22,6 +23,8 @@ export function PrintableLabel({ sender, label, pageSize = 'A6' }: PrintableLabe
   const normalSize = isA6 ? '14px' : '16px';
   const boldSize = isA6 ? '16px' : '20px';
   const largestSize = isA6 ? '28px' : '36px';
+
+  const shipToSize = isA6 ? '16px' : '21px';
 
   useEffect(() => {
     // Dynamically inject the @page rule to force printer size
@@ -51,7 +54,7 @@ export function PrintableLabel({ sender, label, pageSize = 'A6' }: PrintableLabe
 
   return (
     <table 
-      id="printable-label" 
+      id={id} 
       style={{ 
         width: widthPx,
         minHeight: minHeightPx,
@@ -68,13 +71,76 @@ export function PrintableLabel({ sender, label, pageSize = 'A6' }: PrintableLabe
       }}
     >
       <tbody>
-        {/* ROW 1: HEADER SECTION */}
+        {/* ROW 1: SHIP TO SECTION */}
+        <tr>
+          <td style={{ padding: `24px ${paddingPx}`, verticalAlign: 'top', textAlign: 'left', height: '1%' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', margin: 0, padding: 0 }}>
+              <tbody>
+                <tr>
+                  <td style={{ width: '40%', padding: '0 16px 0 0', verticalAlign: 'middle', textAlign: 'left' }}>
+                    <div style={{ 
+                      fontSize: shipToSize, 
+                      fontWeight: '900', 
+                      margin: 0, 
+                      padding: '4px 8px', 
+                      backgroundColor: '#000', 
+                      color: '#fff', 
+                      display: 'inline-block',
+                      lineHeight: 1
+                    }}>
+                      SHIP TO
+                    </div>
+                  </td>
+                  <td style={{ width: '60%', padding: 0, verticalAlign: 'middle', textAlign: 'left' }}>
+                    <div style={{ 
+                      fontSize: largestSize, 
+                      fontWeight: 'bold', 
+                      textTransform: 'uppercase', 
+                      margin: '0 0 8px 0', 
+                      padding: 0, 
+                      wordWrap: 'break-word', 
+                      overflowWrap: 'break-word', 
+                      lineHeight: 1.1 
+                    }}>
+                      {label.recipient.name}
+                    </div>
+                    {label.recipient.phone && (
+                      <div style={{ fontSize: normalSize, margin: '0 0 8px 0', padding: 0 }}>
+                        {label.recipient.phone}
+                      </div>
+                    )}
+                    <div style={{ 
+                      fontSize: normalSize, 
+                      margin: 0, 
+                      padding: 0, 
+                      whiteSpace: 'pre-wrap', 
+                      wordWrap: 'break-word', 
+                      overflowWrap: 'break-word' 
+                    }}>
+                      {label.recipient.address}
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+
+        {/* ROW 2: DIVIDER */}
+        <tr>
+          <td style={{ padding: `0 ${paddingPx}`, height: '1%' }}>
+            <div style={{ borderTop: '2px solid #000', height: '1px', width: '100%', padding: 0, margin: '8px 0' }}></div>
+          </td>
+        </tr>
+
+        {/* ROW 3: FROM SECTION */}
         <tr>
           <td style={{ padding: paddingPx, verticalAlign: 'top', height: '1%' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', margin: 0, padding: 0 }}>
               <tbody>
                 <tr>
                   <td style={{ width: '80%', padding: 0, verticalAlign: 'top', textAlign: 'left' }}>
+                    <div style={{ fontSize: smallSize, fontWeight: 'bold', margin: '0 0 4px 0', padding: 0, color: '#444' }}>FROM:</div>
                     <div style={{ fontSize: boldSize, fontWeight: 'bold', margin: '0 0 4px 0', padding: 0 }}>{sender.businessName}</div>
                     {sender.address && (
                       <div style={{ fontSize: normalSize, margin: '4px 0 0 0', padding: 0, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
@@ -99,50 +165,6 @@ export function PrintableLabel({ sender, label, pageSize = 'A6' }: PrintableLabe
                 </tr>
               </tbody>
             </table>
-          </td>
-        </tr>
-
-        {/* ROW 2: DIVIDER */}
-        <tr>
-          <td style={{ padding: `0 ${paddingPx}`, height: '1%' }}>
-            <div style={{ borderTop: '1px solid #000', height: '1px', width: '100%', padding: 0, margin: '8px 0' }}></div>
-          </td>
-        </tr>
-
-        {/* ROW 3: SHIP TO SECTION */}
-        <tr>
-          <td style={{ padding: `8px ${paddingPx}`, verticalAlign: 'top', textAlign: 'left', height: '1%' }}>
-            <div style={{ fontSize: smallSize, fontWeight: 'bold', margin: '0 0 8px 0', padding: 0 }}>SHIP TO:</div>
-            
-            <div style={{ 
-              fontSize: largestSize, 
-              fontWeight: 'bold', 
-              textTransform: 'uppercase', 
-              margin: '8px 0', 
-              padding: 0, 
-              wordWrap: 'break-word', 
-              overflowWrap: 'break-word', 
-              lineHeight: 1.1 
-            }}>
-              {label.recipient.name}
-            </div>
-
-            {label.recipient.phone && (
-              <div style={{ fontSize: normalSize, margin: '8px 0', padding: 0 }}>
-                {label.recipient.phone}
-              </div>
-            )}
-            
-            <div style={{ 
-              fontSize: normalSize, 
-              margin: '8px 0 0 0', 
-              padding: 0, 
-              whiteSpace: 'pre-wrap', 
-              wordWrap: 'break-word', 
-              overflowWrap: 'break-word' 
-            }}>
-              {label.recipient.address}
-            </div>
           </td>
         </tr>
 
@@ -173,4 +195,3 @@ export function PrintableLabel({ sender, label, pageSize = 'A6' }: PrintableLabe
     </table>
   );
 }
-

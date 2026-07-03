@@ -14,7 +14,7 @@ import java.io.FileOutputStream;
 
 public class PdfManager {
 
-    public static File savePdf(Context context, byte[] pdfBytes) {
+    public static File savePdf(final Context context, byte[] pdfBytes) {
         try {
             File directory = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
             long timestamp = System.currentTimeMillis();
@@ -28,17 +28,17 @@ public class PdfManager {
             if (file.exists() && file.length() > 0) {
                 return file;
             } else {
-                Toast.makeText(context, "Failed to save PDF", Toast.LENGTH_SHORT).show();
+                showToast(context, "Failed to save PDF temporarily");
                 return null;
             }
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(context, "Error saving PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            showToast(context, "Error saving PDF: " + e.getMessage());
             return null;
         }
     }
 
-    public static void saveToDownloads(Context context, byte[] pdfBytes) {
+    public static void saveToDownloads(final Context context, byte[] pdfBytes) {
         long timestamp = System.currentTimeMillis();
         String filename = "FastLabel_" + timestamp + ".pdf";
 
@@ -57,9 +57,9 @@ public class PdfManager {
                         outputStream.write(pdfBytes);
                         outputStream.close();
                     }
-                    Toast.makeText(context, "PDF saved to Downloads", Toast.LENGTH_SHORT).show();
+                    showToast(context, "PDF saved to Downloads!");
                 } else {
-                    Toast.makeText(context, "Failed to save PDF", Toast.LENGTH_SHORT).show();
+                    showToast(context, "Failed to save PDF");
                 }
             } else {
                 File target = new File(
@@ -71,15 +71,24 @@ public class PdfManager {
                 fos.flush();
                 fos.close();
                 if (target.exists() && target.length() > 0) {
-                    Toast.makeText(context, "PDF saved to Downloads", Toast.LENGTH_SHORT).show();
+                    showToast(context, "PDF saved to Downloads!");
                 } else {
-                    Toast.makeText(context, "Failed to save PDF", Toast.LENGTH_SHORT).show();
+                    showToast(context, "Failed to save PDF");
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(context, "Error saving to Downloads: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            showToast(context, "Error saving to Downloads: " + e.getMessage());
         }
+    }
+
+    private static void showToast(final Context context, final String message) {
+        new android.os.Handler(android.os.Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     public static Uri getUriForFile(Context context, File file) {
@@ -103,7 +112,7 @@ public class PdfManager {
             );
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(context, "Error sharing PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            showToast(context, "Error sharing PDF: " + e.getMessage());
         }
     }
 }

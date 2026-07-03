@@ -11,8 +11,6 @@ const PAGE_SIZE_DIMENSIONS: Record<PageSize, [number, number]> = {
 import { saveLabel } from '../db';
 import { PrintableLabel } from '../components/PrintableLabel';
 import toast from 'react-hot-toast';
-// @ts-ignore
-import html2pdf from 'html2pdf.js';
 
 interface CreatorWizardProps {
   sender: SenderProfile;
@@ -42,10 +40,17 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
   }, []);
 
   const handlePageSizeChange = (newSize: PageSize) => {
+    if (pageSize === newSize) {
+      toast('No update necessary, settings are unchanged.', { icon: 'ℹ️' });
+      return;
+    }
     setPageSize(newSize);
     try {
       localStorage.setItem('fastlabel_pagesize', newSize);
-    } catch(e){}
+      toast.success('Page size updated successfully. The changes are now reflected in the preview.');
+    } catch(e){
+      toast.error('Unable to save the changes. Please try again.');
+    }
   };
 
   const handlePaste = async () => {
@@ -115,15 +120,82 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
     } catch (e) {}
   };
 
+  const generatePdfBase64 = async () => {
+    const html2pdfModule = await import('html2pdf.js');
+    const html2pdf = html2pdfModule.default || html2pdfModule;
+
+    const el = document.getElementById('printable-label');
+    if (!el) throw new Error('Element not found');
+    const clone = el.cloneNode(true) as HTMLElement;
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '0';
+    container.style.top = '0';
+    container.style.zIndex = '-9999';
+    container.style.opacity = '0';
+    container.style.pointerEvents = 'none';
+    
+    container.appendChild(clone);
+    document.body.appendChild(container);
+
+    const isA6 = pageSize === 'A6';
+    const opt = {
+      margin: 0,
+      filename: `FastLabel_${new Date().getTime()}.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: { scale: 1, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm' as const, format: isA6 ? 'a6' : 'a5', orientation: 'portrait' as const }
+    };
+    
+    const dataUri = await html2pdf().set(opt).from(clone).output('datauristring');
+    document.body.removeChild(container);
+    return { dataUri, filename: opt.filename };
+  };
+
+  const generatePdfBlob = async () => {
+    const html2pdfModule = await import('html2pdf.js');
+    const html2pdf = html2pdfModule.default || html2pdfModule;
+
+    const el = document.getElementById('printable-label');
+    if (!el) throw new Error('Element not found');
+    const clone = el.cloneNode(true) as HTMLElement;
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '0';
+    container.style.top = '0';
+    container.style.zIndex = '-9999';
+    container.style.opacity = '0';
+    container.style.pointerEvents = 'none';
+    
+    container.appendChild(clone);
+    document.body.appendChild(container);
+
+    const isA6 = pageSize === 'A6';
+    const opt = {
+      margin: 0,
+      filename: `FastLabel_${new Date().getTime()}.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: { scale: 1, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm' as const, format: isA6 ? 'a6' : 'a5', orientation: 'portrait' as const }
+    };
+    
+    const blob = await html2pdf().set(opt).from(clone).output('blob');
+    document.body.removeChild(container);
+    return { blob, filename: opt.filename };
+  };
+
   const handleDownload = async () => {
     try {
       if (!initialLabel?.id) { await saveLabel(label); }
-      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.downloadHtml) {
-        (window as any).AndroidBridge.downloadHtml(getLabelHtml(), pageSize);
-        toast.success('Saving PDF...');
+      toast.loading('Generating PDF...', { id: 'pdf' });
+      
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.downloadPdf) {
+        const { dataUri } = await generatePdfBase64();
+        const b64 = dataUri.split(',')[1];
+        (window as any).AndroidBridge.downloadPdf(b64);
+        toast.success('Saving PDF...', { id: 'pdf' });
         onFinish();
       } else {
-        toast.loading('Generating PDF...', { id: 'pdf' });
         const el = document.getElementById('printable-label');
         if (el) {
           const clone = el.cloneNode(true) as HTMLElement;
@@ -151,8 +223,6 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
           document.body.removeChild(container);
           
           toast.success('Downloaded PDF!', { id: 'pdf' });
-        } else {
-          toast.error('Failed to locate PDF element', { id: 'pdf' });
         }
         onFinish();
       }
@@ -165,67 +235,26 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
   const handleShare = async () => {
     try {
       if (!initialLabel?.id) { await saveLabel(label); }
-      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.shareHtml) {
-        (window as any).AndroidBridge.shareHtml(getLabelHtml(), pageSize);
-        toast.success('Preparing to share...');
+      toast.loading('Generating PDF...', { id: 'pdf' });
+      
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.sharePdf) {
+        const { dataUri } = await generatePdfBase64();
+        const b64 = dataUri.split(',')[1];
+        (window as any).AndroidBridge.sharePdf(b64);
+        toast.success('Ready to share!', { id: 'pdf' });
         onFinish();
       } else {
-        toast.loading('Generating PDF...', { id: 'pdf' });
-        const el = document.getElementById('printable-label');
-        if (el) {
-          const clone = el.cloneNode(true) as HTMLElement;
-          const container = document.createElement('div');
-          container.style.position = 'absolute';
-          container.style.left = '0';
-          container.style.top = '0';
-          container.style.zIndex = '-9999';
-          container.style.opacity = '0';
-          container.style.pointerEvents = 'none';
-          
-          container.appendChild(clone);
-          document.body.appendChild(container);
-
-          const isA6 = pageSize === 'A6';
-          const opt = {
-            margin: 0,
-            filename: `FastLabel_${new Date().getTime()}.pdf`,
-            image: { type: 'jpeg' as const, quality: 0.98 },
-            html2canvas: { scale: 1, useCORS: true, logging: false },
-            jsPDF: { unit: 'mm' as const, format: isA6 ? 'a6' : 'a5', orientation: 'portrait' as const }
-          };
-          
-          const pdfBlob = await html2pdf().set(opt).from(clone).output('blob');
-          document.body.removeChild(container);
-          
-          const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: 'Shipping Label',
-              text: 'Here is the shipping label.'
-            });
-            toast.success('Ready to share!', { id: 'pdf' });
-          } else {
-            // Fallback to download
-            toast.loading('Sharing not supported, downloading instead...', { id: 'pdf' });
-            
-            const containerDL = document.createElement('div');
-            containerDL.style.position = 'absolute';
-            containerDL.style.left = '0';
-            containerDL.style.top = '0';
-            containerDL.style.zIndex = '-9999';
-            containerDL.style.opacity = '0';
-            containerDL.style.pointerEvents = 'none';
-            containerDL.appendChild(clone);
-            document.body.appendChild(containerDL);
-            
-            await html2pdf().set(opt).from(clone).save();
-            document.body.removeChild(containerDL);
-            
-            toast.success('Downloaded PDF instead!', { id: 'pdf' });
-          }
+        const { blob, filename } = await generatePdfBlob();
+        const file = new File([blob], filename, { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Shipping Label',
+            text: 'Here is the shipping label.'
+          });
+          toast.success('Ready to share!', { id: 'pdf' });
         } else {
-          toast.error('Failed to locate PDF element', { id: 'pdf' });
+          toast.error('Sharing not supported', { id: 'pdf' });
         }
         onFinish();
       }
@@ -345,46 +374,21 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
               </div>
             </div>
             
-            {/* Visual Screen Preview (Not the actual print one) */}
+            {/* Visual Screen Preview (Exact Match) */}
             <div 
-              className="w-full bg-white text-black shadow-xl border border-slate-200 rounded-sm flex flex-col overflow-hidden relative"
+              className="w-full bg-white shadow-xl border border-slate-200 rounded-sm relative overflow-hidden"
               style={{
                 maxWidth: pageSize === 'A5' ? '300px' : '280px',
                 aspectRatio: pageSize === 'A5' ? '1748/2480' : '1240/1748'
               }}
             >
-              {/* Top Row - 30% */}
-              <div className="flex flex-row w-full h-[30%] border-b-2 border-black box-border p-3 overflow-hidden">
-                <div className={`flex flex-col h-full justify-between ${sender.logo ? 'w-[75%]' : 'w-full'} pr-2 text-left`}>
-                  <div className="font-bold text-xs uppercase leading-tight">{sender.businessName}</div>
-                  <div className="text-[10px] whitespace-pre-line leading-relaxed flex-1 flex flex-col justify-center py-1">{sender.address}</div>
-                  {sender.phone ? <div className="text-[10px] font-medium">Ph: {sender.phone}</div> : <div />}
-                </div>
-                {sender.logo && (
-                  <div className="w-[25%] h-full flex justify-end items-center">
-                    <img src={sender.logo} className="max-w-full max-h-full object-contain grayscale" alt="Logo" />
-                  </div>
-                )}
-              </div>
-              
-              {/* Middle Row - 50% */}
-              <div className="w-full h-[50%] border-b-2 border-black box-border p-3 flex flex-col justify-start overflow-hidden text-left">
-                <div className="text-[10px] font-medium uppercase tracking-widest text-[#333333] mb-1.5">Ship To:</div>
-                <div className="font-bold text-xl leading-snug uppercase mb-1.5 break-words">{label.recipient.name}</div>
-                {label.recipient.phone && <div className="text-sm font-semibold mb-2">Tel: {label.recipient.phone}</div>}
-                <div className="text-xs font-normal whitespace-pre-line leading-relaxed break-words">{label.recipient.address}</div>
-              </div>
-
-              {/* Bottom Row - 20% */}
-              <div className="w-full h-[20%] box-border p-3 flex flex-col justify-start overflow-hidden text-left">
-                <div className="text-[10px] font-medium uppercase tracking-widest text-[#333333] mb-1">Product Details:</div>
-                {label.productDetails ? (
-                  <div className="text-xs font-normal whitespace-pre-line break-words leading-relaxed">
-                    {label.productDetails}
-                  </div>
-                ) : (
-                  <div className="text-xs italic text-[#666666]">No details provided</div>
-                )}
+              <div style={{
+                transform: `scale(${pageSize === 'A5' ? (300 / 560) : (280 / 397)})`,
+                transformOrigin: 'top left',
+                width: pageSize === 'A5' ? '560px' : '397px',
+                height: pageSize === 'A5' ? '794px' : '560px'
+              }}>
+                <PrintableLabel sender={sender} label={label} pageSize={pageSize} id="preview-label" />
               </div>
             </div>
 

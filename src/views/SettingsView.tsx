@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Save } from 'lucide-react';
 import { getSenderProfile, saveSenderProfile } from '../db';
 import { SenderProfile } from '../types';
+import toast from 'react-hot-toast';
 
 interface SettingsViewProps {
   onProfileSaved: () => void;
@@ -14,23 +15,45 @@ export function SettingsView({ onProfileSaved }: SettingsViewProps) {
     phone: '',
     logo: ''
   });
+  const [initialProfile, setInitialProfile] = useState<Omit<SenderProfile, 'id'> | null>(null);
   const [loading, setLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     getSenderProfile().then(p => {
-      if (p) setProfile(p);
+      if (p) {
+        setProfile(p);
+        setInitialProfile(p);
+      }
       setLoading(false);
     });
   }, []);
 
   const handleSave = async () => {
     if (!profile.businessName || !profile.address) {
-      alert('Business Name and Address are required.');
+      toast.error('Failed to update the setting due to a validation error: Business Name and Address are required.');
       return;
     }
-    await saveSenderProfile(profile);
-    onProfileSaved();
+
+    const isUnchanged = initialProfile && 
+      initialProfile.businessName === profile.businessName &&
+      initialProfile.address === profile.address &&
+      initialProfile.phone === profile.phone &&
+      initialProfile.logo === profile.logo;
+
+    if (isUnchanged) {
+      toast('No update necessary, settings are unchanged.', { icon: 'ℹ️' });
+      return;
+    }
+
+    try {
+      await saveSenderProfile(profile);
+      setInitialProfile(profile);
+      toast.success('Sender profile updated successfully.');
+      onProfileSaved();
+    } catch (error) {
+      toast.error('Unable to save the changes. Please try again.');
+    }
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

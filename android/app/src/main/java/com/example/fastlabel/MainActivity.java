@@ -13,9 +13,15 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onResume() {
         super.onResume();
-        WebView webView = this.getBridge().getWebView();
-        if (webView != null) {
-            webView.addJavascriptInterface(new WebAppInterface(this), "AndroidBridge");
+        try {
+            if (this.getBridge() != null) {
+                WebView webView = this.getBridge().getWebView();
+                if (webView != null) {
+                    webView.addJavascriptInterface(new WebAppInterface(this), "AndroidBridge");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
