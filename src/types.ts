@@ -17,4 +17,6 @@ export interface LabelRecord {
   recipient: LabelField;
   productDetails: string;
   timestamp: number;
+  orderId?: string;
+  courierPartner?: string;
 }

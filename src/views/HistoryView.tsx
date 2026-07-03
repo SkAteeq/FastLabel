@@ -55,6 +55,21 @@ export function HistoryView({ onDuplicate, onReprint }: HistoryViewProps) {
                 {new Date(label.timestamp).toLocaleDateString()}
               </span>
             </div>
+
+            {(label.orderId || label.courierPartner) && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {label.orderId && (
+                  <span className="px-2 py-0.5 text-xs font-mono font-medium rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                    ID: {label.orderId}
+                  </span>
+                )}
+                {label.courierPartner && (
+                  <span className="px-2 py-0.5 text-xs font-semibold rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">
+                    Courier: {label.courierPartner}
+                  </span>
+                )}
+              </div>
+            )}
             
             <p className="text-[14px] text-slate-600 dark:text-slate-400 line-clamp-2 mb-4 leading-relaxed">
               {label.recipient.address}

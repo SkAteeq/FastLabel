@@ -21,10 +21,22 @@ interface CreatorWizardProps {
 
 export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish }: CreatorWizardProps) {
   const [step, setStep] = useState(initialStep);
-  const [label, setLabel] = useState<LabelRecord>(initialLabel || {
-    recipient: { name: '', phone: '', address: '' },
-    productDetails: '',
-    timestamp: Date.now()
+  const [label, setLabel] = useState<LabelRecord>(() => {
+    if (initialLabel) {
+      return {
+        orderId: '',
+        courierPartner: 'Delhivery',
+        ...initialLabel
+      };
+    }
+    const randomId = `ORD-${String(Math.floor(Date.now() / 1000)).slice(-6)}`;
+    return {
+      recipient: { name: '', phone: '', address: '' },
+      productDetails: '',
+      timestamp: Date.now(),
+      orderId: randomId,
+      courierPartner: 'Delhivery'
+    };
   });
 
   const [pageSize, setPageSize] = useState<PageSize>('A6');
@@ -121,7 +133,7 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
   };
 
   const generatePdfBase64 = async () => {
-    const html2pdfModule = await import('html2pdf.js');
+    const html2pdfModule = await import('html2pdf.js') as any;
     const html2pdf = html2pdfModule.default || html2pdfModule;
 
     const el = document.getElementById('printable-label');
@@ -153,7 +165,7 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
   };
 
   const generatePdfBlob = async () => {
-    const html2pdfModule = await import('html2pdf.js');
+    const html2pdfModule = await import('html2pdf.js') as any;
     const html2pdf = html2pdfModule.default || html2pdfModule;
 
     const el = document.getElementById('printable-label');
@@ -219,6 +231,8 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
             jsPDF: { unit: 'mm' as const, format: isA6 ? 'a6' : 'a5', orientation: 'portrait' as const }
           };
           
+          const html2pdfModule = await import('html2pdf.js') as any;
+          const html2pdf = html2pdfModule.default || html2pdfModule;
           await html2pdf().set(opt).from(clone).save();
           document.body.removeChild(container);
           
@@ -278,7 +292,7 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
           <ChevronLeft className="w-6 h-6" />
         </button>
         <span className="font-semibold text-lg">
-          {step === 1 ? 'Recipient Details' : step === 2 ? 'Product Details' : 'Preview Output'}
+          {step === 1 ? 'Recipient Details' : step === 2 ? 'Shipment & Product Details' : 'Preview Output'}
         </span>
         <div className="w-10" /> {/* Balancer */}
       </div>
@@ -334,11 +348,47 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
 
         {step === 2 && (
           <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
               <div>
-                <label className="block text-sm font-medium mb-1 text-slate-500">Product Details (Optional)</label>
-                <textarea 
+                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Order ID *</label>
+                <input 
                   autoFocus
+                  className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-4 min-h-[48px] focus:ring-2 focus:ring-emerald-500 outline-none text-lg font-mono"
+                  placeholder="Enter Order ID"
+                  value={label.orderId || ''}
+                  onChange={e => setLabel({...label, orderId: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Shipping Courier Partner *</label>
+                <div className="flex flex-wrap gap-1.5 mb-2.5">
+                  {['Delhivery', 'Blue Dart', 'DTDC', 'Xpressbees', 'Ecom Express', 'India Post', 'Shadowfax', 'Ekart'].map(partner => (
+                    <button
+                      key={partner}
+                      type="button"
+                      onClick={() => setLabel({ ...label, courierPartner: partner })}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all active:scale-95 ${
+                        label.courierPartner === partner
+                          ? 'bg-emerald-500/10 border-emerald-500 text-emerald-700 dark:text-emerald-400'
+                          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+                      }`}
+                    >
+                      {partner}
+                    </button>
+                  ))}
+                </div>
+                <input 
+                  className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-4 min-h-[48px] focus:ring-2 focus:ring-emerald-500 outline-none text-lg"
+                  placeholder="Select or Enter Courier Partner"
+                  value={label.courierPartner || ''}
+                  onChange={e => setLabel({...label, courierPartner: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-slate-500">Product Details (Optional)</label>
+                <textarea 
                   className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-4 min-h-[120px] focus:ring-2 focus:ring-emerald-500 outline-none resize-none text-lg"
                   placeholder="e.g. 2x Cotton T-Shirts, Size M"
                   rows={4}
@@ -404,9 +454,20 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
         {step < 3 ? (
           <button 
             onClick={() => {
-              if (step === 1 && (!label.recipient.name || !label.recipient.address)) {
-                toast.error('Please fill Name and Address');
-                return;
+              if (step === 1) {
+                if (!label.recipient.name || !label.recipient.address) {
+                  toast.error('Please fill Name and Address');
+                  return;
+                }
+              } else if (step === 2) {
+                if (!label.orderId || !label.orderId.trim()) {
+                  toast.error('Failed to update the setting due to a validation error: Order ID is required.');
+                  return;
+                }
+                if (!label.courierPartner || !label.courierPartner.trim()) {
+                  toast.error('Failed to update the setting due to a validation error: Shipping Courier Partner is required.');
+                  return;
+                }
               }
               setStep(s => s + 1);
             }}
