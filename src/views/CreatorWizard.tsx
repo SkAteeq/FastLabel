@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, ClipboardPaste, Printer, Search, PlusCircle, CheckCircle2, Share2, Download, Settings } from 'lucide-react';
 import { SenderProfile, LabelRecord } from '../types';
 
@@ -105,7 +106,7 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
   <meta charset="utf-8">
   <style>
     @page { size: ${pageSize}; margin: 0; }
-    body { 
+    html, body { 
       margin: 0; 
       padding: 0; 
       font-family: Arial, sans-serif; 
@@ -114,6 +115,8 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
       text-rendering: optimizeLegibility;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      background-color: #ffffff !important;
+      color: #000000 !important;
     }
     img {
       image-rendering: -webkit-optimize-contrast;
@@ -135,10 +138,15 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
         (window as any).AndroidBridge.printHtml(getLabelHtml(), pageSize);
         onFinish();
       } else {
-        setTimeout(() => {
-          window.print();
+        const cleanup = () => {
+          window.removeEventListener('afterprint', cleanup);
           onFinish();
-        }, 100);
+        };
+        window.addEventListener('afterprint', cleanup);
+        window.print();
+        
+        // Fallback for browsers that do not reliably fire afterprint (e.g., iOS Safari sometimes)
+        // If it doesn't fire, the user can manually click back.
       }
     } catch (e) {}
   };
@@ -164,12 +172,10 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 h-full relative overflow-x-hidden">
-      <div className="absolute left-[-9999px] top-[-9999px] overflow-hidden print:static print:left-auto print:top-auto print:overflow-visible">
-        <PrintableLabel sender={sender} label={label} pageSize={pageSize} />
-      </div>
-      {/* Header */}
-      <div className="px-4 pt-6 pb-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 z-10 print:hidden">
+    <>
+      <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 h-full relative overflow-x-hidden print:hidden">
+        {/* Header */}
+        <div className="px-4 pt-6 pb-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 z-10 print:hidden">
         <button 
           onClick={step > 1 ? () => setStep(step - 1) : onFinish}
           className="p-2 -ml-2 text-slate-500 active:bg-slate-100 dark:active:bg-slate-800 rounded-full"
@@ -360,5 +366,12 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
         )}
       </div>
     </div>
+    {typeof document !== 'undefined' && createPortal(
+      <div className="hidden print:block absolute top-0 left-0 w-full bg-white m-0 p-0 z-[99999]" id="print-root">
+        <PrintableLabel sender={sender} label={label} pageSize={pageSize} />
+      </div>,
+      document.body
+    )}
+    </>
   );
 }

@@ -11,39 +11,19 @@
 }
 
 @media print {
-  @page {
-    margin: 0;
-    size: 4in 6in;
+  #root {
+    display: none !important;
   }
   html, body {
-    width: 4in;
-    height: 6in;
+    background-color: #ffffff !important;
+    color: #000000 !important;
     margin: 0 !important;
     padding: 0 !important;
-    background: white;
-    overflow: hidden;
-    -webkit-print-color-adjust: exact;
-    color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  body * {
-    visibility: hidden;
-  }
-  #printable-label, #printable-label * {
-    visibility: visible;
-  }
-  #printable-label {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 4in !important;
-    height: 6in !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    box-sizing: border-box;
-    page-break-after: avoid;
-    page-break-before: avoid;
-    page-break-inside: avoid;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
+
