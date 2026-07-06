@@ -100,7 +100,13 @@ export default function App() {
           </div>
 
           <div className="flex-1 overflow-hidden flex flex-col relative print:hidden">
-            {currentTab === 'history' && <HistoryView onDuplicate={handleDuplicate} onReprint={handleReprint} />}
+            {currentTab === 'history' && (
+              <HistoryView 
+                onDuplicate={handleDuplicate} 
+                onReprint={handleReprint} 
+                onCreateNew={() => handleTabChange('home')} 
+              />
+            )}
             {currentTab === 'settings' && <SettingsView onProfileSaved={loadProfile} />}
             
             {currentTab === 'home' && !creatingLabel && (
@@ -112,17 +118,12 @@ export default function App() {
                 <p className="text-slate-500 dark:text-slate-400 text-center max-w-[280px] mb-8">
                   Create a new shipping label instantly. No internet connection required.
                 </p>
-              </div>
-            )}
-
-            {currentTab !== 'settings' && (
-              <div className="absolute bottom-6 right-6">
                 <button
                   onClick={() => handleTabChange('home')}
-                  className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white rounded-2xl p-4 shadow-lg shadow-emerald-500/30 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white rounded-xl py-3.5 px-8 shadow-md hover:shadow-lg shadow-emerald-500/15 active:scale-95 transition-transform flex items-center justify-center gap-2 text-base font-bold"
                 >
-                  <Plus className="w-6 h-6" />
-                  <span className="font-semibold px-1">New Label</span>
+                  <Plus className="w-5 h-5 stroke-[2.5]" />
+                  <span>Create New Label</span>
                 </button>
               </div>
             )}

@@ -17,8 +17,8 @@ export function PrintableLabel({ sender, label, pageSize = 'A6', id = "printable
   // Base dimensions strictly in px mapping to CSS units (96dpi standard)
   const widthPx = isA6 ? '397px' : '560px';
   const minHeightPx = isA6 ? '560px' : '794px';
-  const paddingPx = isA6 ? '12px' : '16px';
-  const gapPx = isA6 ? '12px' : '16px';
+  const paddingPx = isA6 ? '12px' : '18px';
+  const gapPx = isA6 ? '10px' : '14px';
 
   useEffect(() => {
     // Dynamically inject the @page rule to force printer size
@@ -53,12 +53,51 @@ export function PrintableLabel({ sender, label, pageSize = 'A6', id = "printable
   // Order ID
   const orderId = label.orderId || (label.id ? `ORD-${String(label.id).padStart(6, '0')}` : `ORD-${String(Math.floor((label.timestamp || Date.now()) / 1000)).slice(-6)}`);
 
+  // Dynamic scaling based on paper size and text length
+  const addressText = label.recipient.address || '';
+  const nameText = label.recipient.name || '';
+  const addressLen = addressText.length;
+  const nameLen = nameText.length;
+  
+  // Font sizes for Ship To (Recipient)
+  let recipientNameSize = isA6 ? '24px' : '32px';
+  if (nameLen > 25) {
+    recipientNameSize = isA6 ? '18px' : '24px';
+  } else if (nameLen < 12) {
+    recipientNameSize = isA6 ? '28px' : '38px';
+  }
+
+  let recipientAddressSize = isA6 ? '14px' : '18px';
+  if (addressLen > 100) {
+    recipientAddressSize = isA6 ? '11px' : '14px';
+  } else if (addressLen < 40) {
+    recipientAddressSize = isA6 ? '16px' : '22px';
+  }
+
+  // Font sizes for Ship From (Sender)
+  const senderAddressText = sender.address || '';
+  const senderNameText = sender.businessName || '';
+  const senderAddressLen = senderAddressText.length;
+  const senderNameLen = senderNameText.length;
+
+  let senderNameSize = isA6 ? '13px' : '17px';
+  if (senderNameLen > 25) {
+    senderNameSize = isA6 ? '11px' : '13px';
+  }
+
+  let senderAddressSize = isA6 ? '11px' : '14px';
+  if (senderAddressLen > 100) {
+    senderAddressSize = isA6 ? '9px' : '11px';
+  } else if (senderAddressLen < 40) {
+    senderAddressSize = isA6 ? '13px' : '16px';
+  }
+
   return (
     <div 
       id={id} 
       style={{ 
         width: widthPx,
-        minHeight: minHeightPx,
+        height: minHeightPx,
         backgroundColor: '#ffffff',
         color: '#0f172a',
         fontFamily: 'Arial, sans-serif',
@@ -67,204 +106,245 @@ export function PrintableLabel({ sender, label, pageSize = 'A6', id = "printable
         display: 'flex',
         flexDirection: 'column',
         gap: gapPx,
-        overflow: 'hidden'
+        overflow: 'hidden',
+        border: '3px solid #0B192C'
       }}
     >
-      {/* SECTION 1: SHIP TO */}
+      {/* SECTION 1: SHIP TO (45% Height) */}
       <div style={{
-        border: '3px solid #0B192C',
-        borderRadius: isA6 ? '12px' : '16px',
-        padding: isA6 ? '12px' : '16px',
+        flex: '45 45 0%',
+        minHeight: 0,
+        width: '100%',
+        border: '2px solid #0B192C',
+        borderRadius: isA6 ? '6px' : '8px',
+        padding: isA6 ? '10px 14px' : '16px 20px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px'
+        gap: isA6 ? '6px' : '10px',
+        boxSizing: 'border-box'
       }}>
         {/* Header Row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{
             backgroundColor: '#0B192C',
             color: '#fff',
-            padding: isA6 ? '6px 12px' : '8px 16px',
-            borderRadius: '8px',
+            padding: isA6 ? '4px 10px' : '6px 14px',
+            borderRadius: '4px',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px'
           }}>
-            <MapPin size={isA6 ? 16 : 20} />
-            <span style={{ fontWeight: 'bold', fontSize: isA6 ? '16px' : '20px', letterSpacing: '1px' }}>SHIP TO :</span>
+            <MapPin size={isA6 ? 12 : 15} />
+            <span style={{ fontWeight: 'bold', fontSize: isA6 ? '12px' : '15px', letterSpacing: '0.5px' }}>SHIP TO</span>
           </div>
           
           <div style={{
             border: '2px solid #0B192C',
-            borderRadius: '8px',
-            padding: isA6 ? '4px 8px' : '6px 12px',
+            borderRadius: '4px',
+            padding: isA6 ? '3px 8px' : '4px 12px',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px'
           }}>
-            <ClipboardList size={isA6 ? 16 : 20} color="#0B192C" />
+            <ClipboardList size={isA6 ? 12 : 15} color="#0B192C" />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: isA6 ? '10px' : '12px', fontWeight: 'bold' }}>ORDER ID :</span>
-              <span style={{ fontSize: isA6 ? '12px' : '14px', fontWeight: 'bold', color: '#1e3a8a' }}>{orderId}</span>
+              <span style={{ fontSize: isA6 ? '8px' : '9px', fontWeight: 'bold', lineHeight: 1 }}>ORDER ID :</span>
+              <span style={{ fontSize: isA6 ? '11px' : '13px', fontWeight: 'bold', color: '#1e3a8a' }}>{orderId}</span>
             </div>
           </div>
         </div>
 
-        {/* Body Row */}
-        <div style={{ display: 'flex', gap: '16px', marginTop: '4px' }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ fontSize: isA6 ? '24px' : '32px', fontWeight: '900', textTransform: 'uppercase', color: '#0B192C', lineHeight: 1.1, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
-              {label.recipient.name}
-            </div>
-            
-            {label.recipient.phone && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: isA6 ? '14px' : '16px', fontWeight: 'bold' }}>
-                <Phone size={isA6 ? 14 : 16} />
-                {label.recipient.phone}
-              </div>
-            )}
-            
-            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-              <Home size={isA6 ? 16 : 20} style={{ flexShrink: 0, marginTop: '2px' }} />
-              <div style={{ fontSize: isA6 ? '15px' : '18px', fontWeight: '600', whiteSpace: 'pre-wrap', lineHeight: 1.4, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
-                {label.recipient.address}
-              </div>
-            </div>
-
-            {pincode && (
-              <div style={{ marginTop: '8px', border: '2px solid #0B192C', borderRadius: '6px', width: 'fit-content', overflow: 'hidden' }}>
-                <div style={{ backgroundColor: '#0B192C', color: '#fff', fontSize: isA6 ? '10px' : '12px', fontWeight: 'bold', textAlign: 'center', padding: '2px 8px' }}>
-                  PINCODE
-                </div>
-                <div style={{ padding: '4px 8px', fontSize: isA6 ? '16px' : '20px', fontWeight: 'bold', textAlign: 'center', letterSpacing: '1px' }}>
-                  {pincode}
-                </div>
-              </div>
-            )}
+        {/* Recipient Details */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: isA6 ? '6px' : '10px', flex: 1, justifyContent: 'center' }}>
+          <div style={{ fontSize: recipientNameSize, fontWeight: '900', textTransform: 'uppercase', color: '#0B192C', lineHeight: 1.1, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+            {label.recipient.name}
           </div>
-        </div>
-      </div>
-
-      {/* SECTION 2: SHIP FROM */}
-      <div style={{
-        border: '3px solid #0B192C',
-        borderRadius: isA6 ? '12px' : '16px',
-        padding: isA6 ? '12px' : '16px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px'
-      }}>
-        <div style={{
-          backgroundColor: '#0B192C',
-          color: '#fff',
-          padding: isA6 ? '6px 12px' : '8px 16px',
-          borderRadius: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          width: 'fit-content'
-        }}>
-          <Send size={isA6 ? 16 : 20} />
-          <span style={{ fontWeight: 'bold', fontSize: isA6 ? '14px' : '18px', letterSpacing: '1px' }}>SHIP FROM :</span>
-        </div>
-
-        <div style={{ display: 'flex', gap: '16px', marginTop: '4px' }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Building2 size={isA6 ? 16 : 20} style={{ flexShrink: 0, marginTop: '2px', color: '#0B192C' }} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                 <span style={{ fontSize: isA6 ? '14px' : '16px', fontWeight: 'bold', color: '#1e3a8a', wordWrap: 'break-word', overflowWrap: 'break-word' }}>{sender.businessName}</span>
-                 <span style={{ fontSize: isA6 ? '12px' : '14px', whiteSpace: 'pre-wrap', lineHeight: 1.4, wordWrap: 'break-word', overflowWrap: 'break-word' }}>{sender.address}</span>
-              </div>
+          
+          {label.recipient.phone && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: isA6 ? '12px' : '14px', fontWeight: 'bold', color: '#334155' }}>
+              <Phone size={isA6 ? 11 : 13} />
+              {label.recipient.phone}
             </div>
-            
-            {sender.phone && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                <Phone size={isA6 ? 14 : 16} style={{ color: '#0B192C' }} />
-                <span style={{ fontSize: isA6 ? '12px' : '14px', fontWeight: '600' }}>{sender.phone}</span>
-              </div>
-            )}
-
-            {sender.address.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                <Mail size={isA6 ? 14 : 16} style={{ color: '#0B192C' }} />
-                <span style={{ fontSize: isA6 ? '12px' : '14px', fontWeight: '600' }}>{sender.address.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/)![0]}</span>
-              </div>
-            )}
+          )}
+          
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+            <Home size={isA6 ? 13 : 16} style={{ flexShrink: 0, marginTop: '2px', color: '#475569' }} />
+            <div style={{ fontSize: recipientAddressSize, fontWeight: '700', whiteSpace: 'pre-wrap', lineHeight: 1.3, wordBreak: 'break-word', overflowWrap: 'break-word', color: '#000000' }}>
+              {label.recipient.address}
+            </div>
           </div>
 
-          {sender.logo && (
-            <div style={{ width: isA6 ? '80px' : '120px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid #CBD5E1', paddingLeft: '16px', flexShrink: 0 }}>
-              <img src={sender.logo} alt="Logo" style={{ maxWidth: '100%', maxHeight: isA6 ? '60px' : '80px', objectFit: 'contain' }} />
+          {pincode && (
+            <div style={{ border: '2px solid #0B192C', borderRadius: '4px', display: 'flex', alignItems: 'stretch', width: 'fit-content', overflow: 'hidden', alignSelf: 'flex-start', marginTop: isA6 ? '2px' : '4px' }}>
+              <div style={{ backgroundColor: '#0B192C', color: '#fff', fontSize: isA6 ? '9px' : '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', padding: '0 8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                PINCODE
+              </div>
+              <div style={{ padding: isA6 ? '2px 10px' : '4px 16px', fontSize: isA6 ? '14px' : '18px', fontWeight: '900', color: '#000000', letterSpacing: '1px', backgroundColor: '#f8fafc' }}>
+                {pincode}
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* SECTION 3: PRODUCT DETAILS */}
+      {/* SECTION 2: SHIP FROM (35% Height) */}
       <div style={{
-        border: '3px solid #0B192C',
-        borderRadius: isA6 ? '12px' : '16px',
-        padding: isA6 ? '12px' : '16px',
+        flex: '35 35 0%',
+        minHeight: 0,
+        width: '100%',
+        border: '2px solid #0B192C',
+        borderRadius: isA6 ? '6px' : '8px',
+        padding: isA6 ? '10px 14px' : '14px 18px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
-        flex: 1
+        gap: isA6 ? '6px' : '10px',
+        boxSizing: 'border-box'
       }}>
+        {/* Header Title */}
         <div style={{
           backgroundColor: '#0B192C',
           color: '#fff',
-          padding: isA6 ? '6px 12px' : '8px 16px',
-          borderRadius: '8px',
+          padding: isA6 ? '3px 8px' : '4px 12px',
+          borderRadius: '4px',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          gap: '4px',
           width: 'fit-content'
         }}>
-          <Package size={isA6 ? 16 : 20} />
-          <span style={{ fontWeight: 'bold', fontSize: isA6 ? '14px' : '18px', letterSpacing: '1px' }}>PRODUCT DETAILS</span>
+          <Send size={isA6 ? 11 : 13} />
+          <span style={{ fontWeight: 'bold', fontSize: isA6 ? '11px' : '13px', letterSpacing: '0.5px' }}>FROM</span>
         </div>
 
-        <div style={{ display: 'flex', borderBottom: '1px solid #0B192C', paddingBottom: '4px', marginTop: '4px' }}>
-          <div style={{ flex: 1, fontSize: isA6 ? '10px' : '12px', fontWeight: 'bold', textAlign: 'center' }}>ITEM NAME</div>
-          <div style={{ width: isA6 ? '40px' : '60px', fontSize: isA6 ? '10px' : '12px', fontWeight: 'bold', textAlign: 'center', borderLeft: '1px dashed #0B192C' }}>QTY</div>
+        {/* Sender Details */}
+        <div style={{ display: 'flex', gap: '12px', flex: 1, alignItems: 'stretch' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-start' }}>
+              <Building2 size={isA6 ? 12 : 14} style={{ flexShrink: 0, marginTop: '2px', color: '#0B192C' }} />
+              <span style={{ fontSize: senderNameSize, fontWeight: 'bold', color: '#1e3a8a', wordBreak: 'break-word', overflowWrap: 'break-word', lineHeight: 1.15 }}>
+                {sender.businessName}
+              </span>
+            </div>
+            
+            <div style={{ fontSize: senderAddressSize, whiteSpace: 'pre-wrap', lineHeight: 1.3, wordBreak: 'break-word', overflowWrap: 'break-word', color: '#334155' }}>
+              {sender.address}
+            </div>
+            
+            {sender.phone && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                <Phone size={isA6 ? 10 : 12} style={{ color: '#0B192C' }} />
+                <span style={{ fontSize: isA6 ? '10px' : '12px', fontWeight: '600', color: '#475569' }}>{sender.phone}</span>
+              </div>
+            )}
+
+            {sender.address.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
+                <Mail size={isA6 ? 10 : 12} style={{ color: '#0B192C' }} />
+                <span style={{ fontSize: isA6 ? '9px' : '11px', fontWeight: '600', color: '#475569', wordBreak: 'break-all' }}>
+                  {sender.address.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/)![0]}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {sender.logo && (
+            <div style={{ 
+              width: isA6 ? '60px' : '85px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              borderLeft: '1.5px solid #CBD5E1', 
+              paddingLeft: '12px', 
+              flexShrink: 0 
+            }}>
+              <img src={sender.logo} alt="Logo" style={{ maxWidth: '100%', maxHeight: isA6 ? '45px' : '65px', objectFit: 'contain' }} />
+            </div>
+          )}
         </div>
-        
-        <div style={{ display: 'flex', borderBottom: '1px dashed #CBD5E1', paddingBottom: '8px', flex: 1 }}>
-          <div style={{ flex: 1, fontSize: isA6 ? '12px' : '14px', padding: '4px 8px', whiteSpace: 'pre-wrap', wordWrap: 'break-word', overflowWrap: 'break-word' }}>
-            {label.productDetails || 'No details provided'}
-          </div>
-          <div style={{ width: isA6 ? '40px' : '60px', fontSize: isA6 ? '12px' : '14px', padding: '4px', textAlign: 'center', borderLeft: '1px dashed #0B192C', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
-            {label.productDetails ? '1' : '0'}
-          </div>
+      </div>
+
+      {/* SECTION 3: PRODUCT DETAILS (20% Height) */}
+      <div style={{
+        flex: '20 20 0%',
+        minHeight: 0,
+        width: '100%',
+        border: '2px solid #0B192C',
+        borderRadius: isA6 ? '6px' : '8px',
+        padding: isA6 ? '8px 10px' : '12px 14px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: isA6 ? '6px' : '10px',
+        boxSizing: 'border-box'
+      }}>
+        {/* Header Title */}
+        <div style={{
+          backgroundColor: '#0B192C',
+          color: '#fff',
+          padding: isA6 ? '3px 8px' : '4px 12px',
+          borderRadius: '4px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          width: 'fit-content'
+        }}>
+          <Package size={isA6 ? 12 : 14} />
+          <span style={{ fontWeight: 'bold', fontSize: isA6 ? '11px' : '13px', letterSpacing: '0.5px' }}>PRODUCT DETAILS</span>
         </div>
 
-        {/* Footer info area */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '8px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <div style={{ border: '2px solid #0B192C', padding: '4px', borderRadius: '4px' }}>
-              <QrCode size={isA6 ? 32 : 48} color="#0B192C" />
+        {/* Content Table (Flexible to fill height) */}
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column',
+          flex: 1, 
+          border: '2px solid #0B192C', 
+          borderRadius: '4px', 
+          overflow: 'hidden'
+        }}>
+          {/* Table Header */}
+          <div style={{ display: 'flex', backgroundColor: '#0B192C', color: '#fff' }}>
+            <div style={{ flex: 1, fontSize: isA6 ? '10px' : '11px', fontWeight: 'bold', padding: isA6 ? '4px 8px' : '6px 12px' }}>
+              ITEM NAME & DESCRIPTION
+            </div>
+            <div style={{ 
+              width: isA6 ? '50px' : '70px', 
+              fontSize: isA6 ? '10px' : '11px', 
+              fontWeight: 'bold', 
+              padding: isA6 ? '4px' : '6px', 
+              textAlign: 'center', 
+              borderLeft: '2px solid #fff' 
+            }}>
+              QTY
             </div>
           </div>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'center', flex: 1, justifyContent: 'center', padding: '0 8px' }}>
-            <div style={{ backgroundColor: '#f1f5f9', borderRadius: '50%', padding: '6px', border: '1px solid #cbd5e1' }}>
-              <Star size={isA6 ? 14 : 20} style={{ color: '#0B192C' }} />
+          {/* Table Body (Fills all remaining height of the section) */}
+          <div style={{ display: 'flex', flex: 1, backgroundColor: '#fff' }}>
+            <div style={{ 
+              flex: 1, 
+              fontSize: isA6 ? '12px' : '15px', 
+              padding: isA6 ? '6px 10px' : '10px 14px', 
+              whiteSpace: 'pre-wrap', 
+              wordBreak: 'break-word', 
+              overflowWrap: 'break-word', 
+              lineHeight: 1.3, 
+              fontWeight: '600', 
+              display: 'flex',
+              alignItems: 'center',
+              color: '#1e293b'
+            }}>
+              {label.productDetails || 'No details provided'}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: isA6 ? '10px' : '14px', fontWeight: 'bold' }}>Thank you for shopping!</span>
-              <span style={{ fontSize: isA6 ? '8px' : '12px', color: '#475569' }}>We hope you love your purchase.</span>
-            </div>
-          </div>
-
-          <div style={{ border: '2px solid #0B192C', borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ backgroundColor: '#0B192C', color: '#fff', fontSize: isA6 ? '8px' : '10px', fontWeight: 'bold', textAlign: 'center', padding: '2px 4px' }}>
-              HANDLE WITH CARE
-            </div>
-            <div style={{ padding: '4px 8px', display: 'flex', gap: '6px', justifyContent: 'center' }}>
-               <Package size={isA6 ? 14 : 18} color="#0B192C" />
-               <Umbrella size={isA6 ? 14 : 18} color="#0B192C" />
-               <ArrowUpFromLine size={isA6 ? 14 : 18} color="#0B192C" />
+            <div style={{ 
+              width: isA6 ? '50px' : '70px', 
+              fontSize: isA6 ? '18px' : '24px', 
+              fontWeight: '900', 
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#f8fafc',
+              color: '#0B192C',
+              borderLeft: '2px solid #0B192C'
+            }}>
+              {label.productDetails ? '1' : '0'}
             </div>
           </div>
         </div>
