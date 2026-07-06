@@ -19,12 +19,12 @@ export function BottomNav({ currentTab, onChange }: BottomNavProps) {
           onClick={() => onChange('home')}
           className={cn(
             "flex flex-col items-center justify-center w-full h-full gap-1 active:scale-95 transition-transform",
-            currentTab === 'home' ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-slate-400"
+            currentTab === 'home' ? "text-blue-600 dark:text-blue-400" : "text-slate-500 dark:text-slate-400"
           )}
         >
           <div className={cn(
             "px-4 py-1 rounded-full transition-colors", 
-            currentTab === 'home' && "bg-emerald-100 dark:bg-emerald-900/40 font-bold"
+            currentTab === 'home' && "bg-blue-50 dark:bg-blue-900/40 font-bold"
           )}>
             <Home className="w-6 h-6" strokeWidth={currentTab === 'home' ? 2.5 : 2} />
           </div>
@@ -35,12 +35,12 @@ export function BottomNav({ currentTab, onChange }: BottomNavProps) {
           onClick={() => onChange('history')}
           className={cn(
             "flex flex-col items-center justify-center w-full h-full gap-1 active:scale-95 transition-transform",
-            currentTab === 'history' ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-slate-400"
+            currentTab === 'history' ? "text-blue-600 dark:text-blue-400" : "text-slate-500 dark:text-slate-400"
           )}
         >
           <div className={cn(
             "px-4 py-1 rounded-full transition-colors", 
-            currentTab === 'history' && "bg-emerald-100 dark:bg-emerald-900/40 font-bold"
+            currentTab === 'history' && "bg-blue-50 dark:bg-blue-900/40 font-bold"
           )}>
             <Clock className="w-6 h-6" strokeWidth={currentTab === 'history' ? 2.5 : 2} />
           </div>

@@ -1,0 +1,33 @@
+  const handlePrint = async () => {
+    try {
+      if (!initialLabel?.id) { await saveLabel(label); }
+      const cleanup = () => {
+        window.removeEventListener('afterprint', cleanup);
+        onFinish();
+      };
+      window.addEventListener('afterprint', cleanup);
+      window.print();
+    } catch (e) {
+      toast.error('Failed to print');
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      toast.loading('Preparing print dialog for PDF...', { id: 'pdf' });
+      await handlePrint();
+      toast.success('Done', { id: 'pdf' });
+    } catch(e) {
+      toast.error('Failed', { id: 'pdf' });
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      toast.loading('Preparing print dialog for PDF...', { id: 'pdf' });
+      await handlePrint();
+      toast.success('Done', { id: 'pdf' });
+    } catch(e) {
+      toast.error('Failed', { id: 'pdf' });
+    }
+  };
