@@ -41,6 +41,13 @@ export function PrintableLabel({ sender, label, pageSize = 'A6', id = "printable
           font-family: Arial, sans-serif;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
+          text-rendering: optimizeLegibility;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+        }
+        img {
+          image-rendering: -webkit-optimize-contrast;
+          image-rendering: high-quality;
         }
       }
     `;

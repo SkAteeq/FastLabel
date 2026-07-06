@@ -105,7 +105,20 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
   <meta charset="utf-8">
   <style>
     @page { size: ${pageSize}; margin: 0; }
-    body { margin: 0; padding: 0; font-family: Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { 
+      margin: 0; 
+      padding: 0; 
+      font-family: Arial, sans-serif; 
+      -webkit-print-color-adjust: exact; 
+      print-color-adjust: exact; 
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    img {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: high-quality;
+    }
     #printable-label { display: block !important; width: 100%; height: 100%; }
   </style>
 </head>
@@ -130,149 +143,23 @@ export function CreatorWizard({ sender, initialLabel, initialStep = 1, onFinish 
     } catch (e) {}
   };
 
-  const generatePdfBase64 = async () => {
-    const html2pdfModule = await import('html2pdf.js') as any;
-    const html2pdf = html2pdfModule.default || html2pdfModule;
-
-    const el = document.getElementById('printable-label');
-    if (!el) throw new Error('Element not found');
-    const clone = el.cloneNode(true) as HTMLElement;
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.left = '0';
-    container.style.top = '0';
-    container.style.zIndex = '-9999';
-    container.style.opacity = '0';
-    container.style.pointerEvents = 'none';
-    
-    container.appendChild(clone);
-    document.body.appendChild(container);
-
-    const isA6 = pageSize === 'A6';
-    const opt = {
-      margin: 0,
-      filename: `FastLabel_${new Date().getTime()}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 1, useCORS: true, logging: false },
-      jsPDF: { unit: 'mm' as const, format: isA6 ? 'a6' : 'a5', orientation: 'portrait' as const }
-    };
-    
-    const dataUri = await html2pdf().set(opt).from(clone).output('datauristring');
-    document.body.removeChild(container);
-    return { dataUri, filename: opt.filename };
-  };
-
-  const generatePdfBlob = async () => {
-    const html2pdfModule = await import('html2pdf.js') as any;
-    const html2pdf = html2pdfModule.default || html2pdfModule;
-
-    const el = document.getElementById('printable-label');
-    if (!el) throw new Error('Element not found');
-    const clone = el.cloneNode(true) as HTMLElement;
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.left = '0';
-    container.style.top = '0';
-    container.style.zIndex = '-9999';
-    container.style.opacity = '0';
-    container.style.pointerEvents = 'none';
-    
-    container.appendChild(clone);
-    document.body.appendChild(container);
-
-    const isA6 = pageSize === 'A6';
-    const opt = {
-      margin: 0,
-      filename: `FastLabel_${new Date().getTime()}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 1, useCORS: true, logging: false },
-      jsPDF: { unit: 'mm' as const, format: isA6 ? 'a6' : 'a5', orientation: 'portrait' as const }
-    };
-    
-    const blob = await html2pdf().set(opt).from(clone).output('blob');
-    document.body.removeChild(container);
-    return { blob, filename: opt.filename };
-  };
-
   const handleDownload = async () => {
     try {
-      if (!initialLabel?.id) { await saveLabel(label); }
-      toast.loading('Generating PDF...', { id: 'pdf' });
-      
-      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.downloadPdf) {
-        const { dataUri } = await generatePdfBase64();
-        const b64 = dataUri.split(',')[1];
-        (window as any).AndroidBridge.downloadPdf(b64);
-        toast.success('Saving PDF...', { id: 'pdf' });
-        onFinish();
-      } else {
-        const el = document.getElementById('printable-label');
-        if (el) {
-          const clone = el.cloneNode(true) as HTMLElement;
-          const container = document.createElement('div');
-          container.style.position = 'absolute';
-          container.style.left = '0';
-          container.style.top = '0';
-          container.style.zIndex = '-9999';
-          container.style.opacity = '0';
-          container.style.pointerEvents = 'none';
-          
-          container.appendChild(clone);
-          document.body.appendChild(container);
-
-          const isA6 = pageSize === 'A6';
-          const opt = {
-            margin: 0,
-            filename: `FastLabel_${new Date().getTime()}.pdf`,
-            image: { type: 'jpeg' as const, quality: 0.98 },
-            html2canvas: { scale: 1, useCORS: true, logging: false },
-            jsPDF: { unit: 'mm' as const, format: isA6 ? 'a6' : 'a5', orientation: 'portrait' as const }
-          };
-          
-          const html2pdfModule = await import('html2pdf.js') as any;
-          const html2pdf = html2pdfModule.default || html2pdfModule;
-          await html2pdf().set(opt).from(clone).save();
-          document.body.removeChild(container);
-          
-          toast.success('Downloaded PDF!', { id: 'pdf' });
-        }
-        onFinish();
-      }
+      toast.loading('Preparing print dialog for PDF...', { id: 'pdf' });
+      await handlePrint();
+      toast.success('Done', { id: 'pdf' });
     } catch(e) {
-      toast.error('Failed to download PDF', { id: 'pdf' });
-      console.error(e);
+      toast.error('Failed', { id: 'pdf' });
     }
   };
 
   const handleShare = async () => {
     try {
-      if (!initialLabel?.id) { await saveLabel(label); }
-      toast.loading('Generating PDF...', { id: 'pdf' });
-      
-      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.sharePdf) {
-        const { dataUri } = await generatePdfBase64();
-        const b64 = dataUri.split(',')[1];
-        (window as any).AndroidBridge.sharePdf(b64);
-        toast.success('Ready to share!', { id: 'pdf' });
-        onFinish();
-      } else {
-        const { blob, filename } = await generatePdfBlob();
-        const file = new File([blob], filename, { type: 'application/pdf' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: 'Shipping Label',
-            text: 'Here is the shipping label.'
-          });
-          toast.success('Ready to share!', { id: 'pdf' });
-        } else {
-          toast.error('Sharing not supported', { id: 'pdf' });
-        }
-        onFinish();
-      }
+      toast.loading('Preparing print dialog for PDF...', { id: 'pdf' });
+      await handlePrint();
+      toast.success('Done', { id: 'pdf' });
     } catch(e) {
-      toast.error('Failed to share PDF', { id: 'pdf' });
-      console.error(e);
+      toast.error('Failed', { id: 'pdf' });
     }
   };
 
